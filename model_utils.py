@@ -496,7 +496,7 @@ def plot_synapses(model):
     
 
         
-def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs=1, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False, path=''):
+def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs=1, criterion=torch.nn.MSELoss(reduction='none'), save=False, check_thm=False, path=''):
     
     model.train()
     mbs = train_loader.batch_size
@@ -524,7 +524,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 pred = torch.argmax(neurons_1[-1], dim=1).squeeze()
                 run_correct += (y == pred).sum().item()
                 run_total += x.size(0)
-                if (idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1):
+                if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)) and save:
                     plot_neural_activity(neurons_1, path + '/ep-'+str(epoch+1)+'_iter-'+str(idx+1)+'_neural_activity.png')
             
             # Second phase
@@ -548,16 +548,17 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 run_correct = 0
                 run_total = 0
         
-        train_acc.append(run_acc)
-        fig = plt.figure(figsize=(16,9))
-        plt.plot(train_acc)
-        fig.savefig(path + '/train_acc.png')
-        plt.close()
         test_acc = evaluate(model, test_loader, T1, device)
-        if test_acc > best:
-            torch.save({'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict() },  path + '/checkpoint.tar')
-            torch.save(model, path + '/model.pt')
-            best = test_acc
+        if save:
+            train_acc.append(run_acc)
+            fig = plt.figure(figsize=(16,9))
+            plt.plot(train_acc)
+            fig.savefig(path + '/train_acc.png')
+            plt.close()
+            if test_acc > best:
+                torch.save({'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict() },  path + '/checkpoint.tar')
+                torch.save(model, path + '/model.pt')
+                best = test_acc
             
             
 def evaluate(model, loader, T, device):
