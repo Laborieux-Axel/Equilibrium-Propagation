@@ -121,7 +121,7 @@ class P_MLP(torch.nn.Module):
                     
                 neurons_zero_grad(neurons_hist[-1])
                 phi = self.Phi(x, y, neurons_hist[-1], beta=beta, criterion=criterion)
-                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True, retain_graph=True) 
+                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True) 
                 
                 new_neurons = []
                 for idx in range(len(neurons)):
@@ -257,7 +257,7 @@ class P_CNN(torch.nn.Module):
                     
                 neurons_zero_grad(neurons_hist[-1])
                 phi = self.Phi(x, y, neurons_hist[-1], beta=beta, criterion=criterion)
-                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True, retain_graph=True) 
+                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True) 
                 
                 new_neurons = []
                 for idx in range(len(neurons)):
