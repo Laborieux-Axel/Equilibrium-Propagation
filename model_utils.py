@@ -99,11 +99,10 @@ class P_MLP(torch.nn.Module):
     def forward(self, x, y, neurons, T, beta=0.0, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False):
         
         mbs = x.size(0)
-        
+
         if not(check_thm):
-            
             for t in range(T):
-            
+
                 neurons_zero_grad(neurons)
                 phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
                 phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True)) 
@@ -111,26 +110,24 @@ class P_MLP(torch.nn.Module):
                 for idx in range(len(neurons)):
                     neurons[idx] = self.activation( neurons[idx].grad )
                     neurons[idx].requires_grad = True
-            
+
             return neurons
-            
+        
         else:
-            neurons_hist = []
-            neurons_hist.append(neurons)
+            first_neurons = []
+            for idx in range(len(neurons)):
+                first_neurons.append(neurons[idx])
+                
             for t in range(T):
-                    
-                neurons_zero_grad(neurons_hist[-1])
-                phi = self.Phi(x, y, neurons_hist[-1], beta=beta, criterion=criterion)
+                neurons_zero_grad(neurons)
+                phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
                 phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True) 
-                
-                new_neurons = []
+
                 for idx in range(len(neurons)):
-                    new_neurons.append(self.activation( neurons_hist[-1][idx].grad.clone() ))
-                    new_neurons[-1].retain_grad()
-                
-                neurons_hist.append(new_neurons)
-                  
-            return neurons_hist
+                    neurons[idx] = self.activation( neurons[idx].grad )
+                    neurons[idx].retain_grad()
+            
+            return neurons, first_neurons
 
 
     def init_neurons(self, mbs, device):
@@ -233,13 +230,12 @@ class P_CNN(torch.nn.Module):
     
 
     def forward(self, x, y, neurons, T, beta=0.0, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False):
-        
+
         mbs = x.size(0)
-        
+
         if not(check_thm):
-            
             for t in range(T):
-            
+
                 neurons_zero_grad(neurons)
                 phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
                 phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True)) 
@@ -247,27 +243,25 @@ class P_CNN(torch.nn.Module):
                 for idx in range(len(neurons)):
                     neurons[idx] = self.activation( neurons[idx].grad )
                     neurons[idx].requires_grad = True
-            
-            return neurons
-            
-        else:
-            neurons_hist = []
-            neurons_hist.append(neurons)
-            for t in range(T):
-                    
-                neurons_zero_grad(neurons_hist[-1])
-                phi = self.Phi(x, y, neurons_hist[-1], beta=beta, criterion=criterion)
-                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True) 
-                
-                new_neurons = []
-                for idx in range(len(neurons)):
-                    new_neurons.append(self.activation( neurons_hist[-1][idx].grad.clone() ))
-                    new_neurons[-1].retain_grad()
-                
-                neurons_hist.append(new_neurons)
-                  
-            return neurons_hist
 
+            return neurons
+        
+        else:
+            first_neurons = []
+            for idx in range(len(neurons)):
+                first_neurons.append(neurons[idx])
+                
+            for t in range(T):
+                neurons_zero_grad(neurons)
+                phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
+                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True) 
+
+                for idx in range(len(neurons)):
+                    neurons[idx] = self.activation( neurons[idx].grad )
+                    neurons[idx].retain_grad()
+            
+            return neurons, first_neurons
+        
 
     def init_neurons(self, mbs, device):
         
@@ -322,9 +316,6 @@ class P_CNN(torch.nn.Module):
     
 
 
-    
-
-
 def check_gdu(model, x, y, T1, T2, betas, criterion):
     
     # Initialize dictionnaries that will contain BPTT gradients and EP updates
@@ -345,46 +336,40 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
     
     # Last steps of the first phase
     for K in range(T2+1):
-        
+
         neurons = model(x, y, neurons, K, beta=beta_1, criterion=criterion) # Running K time step 
-        
+
         # detach data and neurons from the graph
         x = x.detach()
         x.requires_grad = True
         for idx in range(len(neurons)):
             neurons[idx] = neurons[idx].detach()
             neurons[idx].requires_grad = True
+
+        neurons, first_neurons = model(x, y, neurons, T2-K, beta=beta_1, criterion=criterion, check_thm=True) # T2-K time step
         
-        neurons_hist = model(x, y, neurons, T2-K, beta=beta_1, criterion=criterion, check_thm=True) # T2-K time step
-              
         # final loss
-        loss = (1/(2.0*x.size(0)))*criterion(neurons_hist[-1][-1].double(), F.one_hot(y, num_classes=10).double()).sum(dim=1).squeeze()
-        
+        loss = (1/(2.0*x.size(0)))*criterion(neurons[-1].double(), F.one_hot(y, num_classes=10).double()).sum(dim=1).squeeze()
+
         # setting gradients field to zero before backward
-        for idx in range(len(neurons_hist)):
-            neurons_zero_grad(neurons_hist[idx])
+        neurons_zero_grad(first_neurons)
         model.zero_grad()
-        
+
         # Backpropagation through time
         loss.backward(torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True))
-        
-        # Collecting BPTT gradients : for parameters they are partial sums over T2-K time steps, 
-        # but for neurons they are all obtained for K==0
+
+        # Collecting BPTT gradients : for parameters they are partial sums over T2-K time steps
         if K!=T2:
             for name, p in model.named_parameters():
                 update = torch.empty_like(p).copy_(grad_or_zero(p))
                 BPTT[name].append( update.unsqueeze(0) )  # unsqueeze for time dimension
-            
-            if K==0:
-                for idx in range(len(neurons)):
-                    for k in range(1,len(neurons_hist)):
-                        update = torch.empty_like(neurons_hist[k][idx]).copy_(grad_or_zero(neurons_hist[k][idx]))
-                        BPTT['neurons_'+str(idx)].append( update.mul(-x.size(0)).unsqueeze(0) )  # unsqueeze for time dimension
-        
-            neurons = copy(ref_neurons) # Resetting the neurons to T1-T2 step
-        else:
-            neurons = neurons_hist[0]   # In this case all BPTT gradients have been collected and neurons are set to the neurons at time step T2
+                neurons = copy(ref_neurons) # Resetting the neurons to T1-T2 step
+        if K!=0:
+            for idx in range(len(first_neurons)):
+                update = torch.empty_like(first_neurons[idx]).copy_(grad_or_zero(first_neurons[idx]))
+                BPTT['neurons_'+str(idx)].append( update.mul(-x.size(0)).unsqueeze(0) )  # unsqueeze for time dimension
 
+                                
     # Differentiating partial sums to get elementary parameter gradients
     for name, p in model.named_parameters():
         for idx in range(len(BPTT[name]) - 1):
@@ -415,6 +400,9 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
         EP[key] = torch.cat(EP[key], dim=0)
         
     return BPTT, EP
+    
+
+
 
 
 
