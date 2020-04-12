@@ -24,6 +24,10 @@ def timeSince(since, percent):
     return 'elapsed time : %s \t (will finish in %s)' % (asMinutes(s), asMinutes(rs))
 
 
+
+
+
+
 def my_sigmoid(x):
     return 1/(1+torch.exp(-4*(x-0.5)))
 
@@ -217,7 +221,7 @@ class P_CNN(torch.nn.Module):
         phi = 0.0
         for idx in range(len(self.synapses)):
             if self.synapses[idx].__class__.__name__.find('Conv')!=-1:
-                phi += torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1], dim=(1,2,3)).squeeze()      #phi += torch.sum( self.synapses[idx](layers[idx]) * layers[idx+1], dim=(1,2,3)).squeeze()
+                phi += torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1], dim=(1,2,3)).squeeze()     
                 #phi += torch.sum( self.conv_bias[idx] * layers[idx+1], dim=(1,2,3)).squeeze()
             else:
                 phi += torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
@@ -425,8 +429,7 @@ def RMSE(BPTT, EP):
         g = BPTT[key].pow(2).sum(dim=0).div(K).pow(0.5)
         comp = f_g/(1e-10+torch.max(f,g))
         sign = torch.where(EP[key].sign() != BPTT[key].sign(), torch.ones_like(EP[key]), torch.zeros_like(EP[key]))
-        sign = sign.sum().item()/sign.numel()
-        print(key.replace('.','_'), '\t RMSE =', round(comp.mean().item(), 4), '\t SIGN err =', round(sign, 4))
+        print(key.replace('.','_'), '\t RMSE =', round(comp.mean().item(), 4), '\t SIGN err =', round(sign.mean().item(), 4))
     print('\n')
 
     
@@ -463,24 +466,22 @@ def plot_gdu(BPTT, EP, path):
             plt.title(key.replace('.','_'))
             plt.legend()
     fig.savefig(path + '/some_gdu_curves.png')
-    #plt.show()
     plt.close()        
         
 def plot_neural_activity(neurons, path):   
     N = len(neurons)
-    fig = plt.figure(figsize=(4*N,3))
+    fig = plt.figure(figsize=(3*N,6))
     for idx in range(N):
-        fig.add_subplot(1, N, idx+1)
+        fig.add_subplot(2, N//2+1, idx+1)
         nrn = neurons[idx].cpu().detach().numpy().flatten()
         plt.hist(nrn, 50)
         plt.xlim((-1.1,1.1))
         plt.title('neurons of layer '+str(idx+1))
     fig.savefig(path)
-    #plt.show()
     plt.close()
     
 
-def plot_synapses(model):   
+def plot_synapses(model, path):   
     N = len(model.synapses)
     fig = plt.figure(figsize=(4*N,3))
     for idx in range(N):
@@ -488,8 +489,7 @@ def plot_synapses(model):
         nrn = model.synapses[idx].weight.cpu().detach().numpy().flatten()
         plt.hist(nrn, 50)
         plt.title('synapses of layer '+str(idx+1))
-    #plt.show()
-
+    fig.savefig(path)
 
 
     

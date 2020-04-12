@@ -122,10 +122,9 @@ elif args.model=='CNN':
             pools = [torch.nn.Identity(), torch.nn.Identity(), torch.nn.Identity()]
             strides = [2,2,1]
         model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, activation=activation)
-    
+    print('\n')
     print('Poolings =', model.pools)
 
-print('\n')
 print(model)
 model.to(device)
 
