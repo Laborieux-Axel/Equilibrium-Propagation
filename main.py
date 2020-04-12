@@ -18,6 +18,8 @@ parser.add_argument('--model',type = str, default = 'MLP', metavar = 'm', help='
 parser.add_argument('--pool',type = str, default = 'max', metavar = 'p', help='pooling')
 parser.add_argument('--task',type = str, default = 'MNIST', metavar = 't', help='task')
 parser.add_argument('--archi', nargs='+', type = int, default = [784, 512, 10], metavar = 'A', help='architecture of the network')
+parser.add_argument('--act',type = str, default = 'mysig', metavar = 'a', help='activation function')
+parser.add_argument('--optim', type = str, default = 'sgd', metavar = 'opt', help='optimizer for training')
 parser.add_argument('--lrs', nargs='+', type = float, default = [], metavar = 'l', help='layer wise lr')
 parser.add_argument('--mbs',type = int, default = 20, metavar = 'M', help='minibatch size')
 parser.add_argument('--T1',type = int, default = 20, metavar = 'T1', help='Time of first phase')
@@ -27,13 +29,13 @@ parser.add_argument('--epochs',type = int, default = 1,metavar = 'EPT',help='Num
 parser.add_argument('--check-thm', default = False, action = 'store_true', help='checking the gdu while training')
 parser.add_argument('--save', default = False, action = 'store_true', help='saving results')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
-parser.add_argument('--optim', type = str, default = 'sgd', metavar = 'opt', help='optimizer for training')
 parser.add_argument('--seed',type = int, default = 2, metavar = 's', help='random seed')
 parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='device')
-parser.add_argument('--act',type = str, default = 'mysig', metavar = 'a', help='activation function')
 
 args = parser.parse_args()
 
+
+print('\n')
 print('##################################################################')
 print('\nargs\tmbs\tT1\tT2\tepochs\tactivation\tbetas')
 print('\t',args.mbs,'\t',args.T1,'\t',args.T2,'\t',args.epochs,'\t',args.act, '\t', args.betas)
@@ -64,14 +66,13 @@ if args.task=='MNIST':
 elif args.task=='CIFAR10':
 
     transform_train = torchvision.transforms.Compose([#torchvision.transforms.RandomHorizontalFlip(0.5),
-                                                      #torchvision.transforms.RandomChoice([torchvision.transforms.RandomRotation(10), torchvision.transforms.RandomCrop(size=[32,32], padding=4, padding_mode='edge')]),
                                                       #torchvision.transforms.RandomCrop(size=[32,32], padding=4, padding_mode='edge'),
                                                       torchvision.transforms.ToTensor(), 
                                                       torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010))
                                                      ])   
 
-    transform_test = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010)) ]) 
-
+    transform_test = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), 
+                                                     torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010)) ]) 
 
     cifar10_train_dset = torchvision.datasets.CIFAR10('./cifar10_pytorch', train=True, transform=transform_train, download=True)
     cifar10_test_dset = torchvision.datasets.CIFAR10('./cifar10_pytorch', train=False, transform=transform_test, download=True)
@@ -121,9 +122,10 @@ elif args.model=='CNN':
             pools = [torch.nn.Identity(), torch.nn.Identity(), torch.nn.Identity()]
             strides = [2,2,1]
         model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, activation=activation)
-        print(model.pools)
+    
+    print('Poolings =', model.pools)
 
-
+print('\n')
 print(model)
 model.to(device)
 
