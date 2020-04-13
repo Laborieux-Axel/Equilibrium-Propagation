@@ -153,7 +153,7 @@ class P_MLP(torch.nn.Module):
         phi_2 = phi_2.mean()
         
         delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
-        delta_phi.backward()                   # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
+        delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
         
 
     
@@ -285,7 +285,7 @@ class P_CNN(torch.nn.Module):
         phi_2 = phi_2.mean()
         
         delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
-        delta_phi.backward()                   # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
+        delta_phi.backward()  # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
  
         
     
@@ -456,7 +456,7 @@ def plot_synapses(model, path):
         plt.hist(nrn, 50)
         plt.title('synapses of layer '+str(idx+1))
     fig.savefig(path)
-
+    plt.close()
 
     
     
