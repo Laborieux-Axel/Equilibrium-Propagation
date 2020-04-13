@@ -147,25 +147,14 @@ class P_MLP(torch.nn.Module):
             phi_1 = self.Phi(x, y, neurons_1, beta_1, criterion)
         else:
             phi_1 = self.Phi(x, y, neurons_1, beta_2, criterion)
-        
         phi_1 = phi_1.mean()
-        phi_1.backward()            # p.grad =  d_Phi_1/dp
-        self.minus_grad()           # p.grad = -d_Phi_1/dp
         
         phi_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
         phi_2 = phi_2.mean()
-        phi_2.backward()            # p.grad = d_Phi_2/dp - d_Phi_1/dp
         
-        for p in self.parameters():
-            if p.grad is not None:
-                p.grad.data.div_(beta_1 - beta_2)    # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
+        delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
+        delta_phi.backward()                   # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
         
-        
-    def minus_grad(self):
-        for p in self.parameters():
-            if p.grad is not None:
-                p.grad.data.mul_(-1)
-    
 
     
     
@@ -285,30 +274,19 @@ class P_CNN(torch.nn.Module):
         
         beta_1, beta_2 = betas
         
-        self.zero_grad()            # p.grad = 0
+        self.zero_grad()            # p.grad is zero
         if not(check_thm):
             phi_1 = self.Phi(x, y, neurons_1, beta_1, criterion)
         else:
             phi_1 = self.Phi(x, y, neurons_1, beta_2, criterion)
-        
         phi_1 = phi_1.mean()
-        phi_1.backward()            # p.grad =  d_Phi_1/dp
-        self.minus_grad()           # p.grad = -d_Phi_1/dp
         
         phi_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
         phi_2 = phi_2.mean()
-        phi_2.backward()            # p.grad = d_Phi_2/dp - d_Phi_1/dp
         
-        for p in self.parameters():
-            if p.grad is not None:
-                p.grad.data.div_(beta_1 - beta_2)  # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ---> dL/dp  by the theorem
-        
-        
-    def minus_grad(self):
-        for p in self.parameters():
-            if p.grad is not None:
-                p.grad.data.mul_(-1)
-
+        delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
+        delta_phi.backward()                   # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
+ 
         
     
     
