@@ -54,6 +54,8 @@ if args.save:
         path = args.load_path
     if not(os.path.exists(path)):
         os.makedirs(path)
+else:
+    path = ''
 
 mbs=args.mbs
 torch.manual_seed(args.seed)
