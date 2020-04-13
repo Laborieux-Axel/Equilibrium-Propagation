@@ -522,7 +522,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
             
             if (idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1):
                 run_acc = run_correct/run_total
-                print('Epoch :', round(epoch+(idx/iter_per_epochs), 2),
+                print('Epoch :', round(epoch_sofar+epoch+(idx/iter_per_epochs), 2),
                       '\tRun train acc :', round(run_acc,3),'\t('+str(run_correct)+'/'+str(run_total)+')\t',
                       timeSince(start, ((idx+1)+epoch*iter_per_epochs)/(epochs*iter_per_epochs)))
                 
