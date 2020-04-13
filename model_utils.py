@@ -394,7 +394,7 @@ def RMSE(BPTT, EP):
         f =  EP[key].pow(2).sum(dim=0).div(K).pow(0.5)
         g = BPTT[key].pow(2).sum(dim=0).div(K).pow(0.5)
         comp = f_g/(1e-10+torch.max(f,g))
-        sign = torch.where(EP[key].sign() != BPTT[key].sign(), torch.ones_like(EP[key]), torch.zeros_like(EP[key]))
+        sign = torch.where(EP[key].sign()*BPTT[key].sign()== -1, torch.ones_like(EP[key]), torch.zeros_like(EP[key]))
         print(key.replace('.','_'), '\t RMSE =', round(comp.mean().item(), 4), '\t SIGN err =', round(sign.mean().item(), 4))
     print('\n')
 
