@@ -121,10 +121,10 @@ class P_MLP(torch.nn.Module):
             for t in range(T):
                 neurons_zero_grad(neurons)
                 phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
-                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True) 
+                grads = torch.autograd.grad(phi, neurons, grad_outputs=torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True)
 
                 for idx in range(len(neurons)):
-                    neurons[idx] = self.activation( neurons[idx].grad )
+                    neurons[idx] = self.activation( grads[idx] )
                     neurons[idx].retain_grad()
             
             return neurons, first_neurons
@@ -243,10 +243,10 @@ class P_CNN(torch.nn.Module):
             for t in range(T):
                 neurons_zero_grad(neurons)
                 phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
-                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True) 
-
+                grads = torch.autograd.grad(phi, neurons, grad_outputs=torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True)
+                
                 for idx in range(len(neurons)):
-                    neurons[idx] = self.activation( neurons[idx].grad )
+                    neurons[idx] = self.activation( grads[idx] )
                     neurons[idx].retain_grad()
             
             return neurons, first_neurons
@@ -446,7 +446,6 @@ def plot_neural_activity(neurons, path):
     fig.savefig(path)
     plt.close()
     
-
 def plot_synapses(model, path):   
     N = len(model.synapses)
     fig = plt.figure(figsize=(4*N,3))
@@ -460,10 +459,11 @@ def plot_synapses(model, path):
 
 def plot_acc(train_acc, test_acc, path):
     fig = plt.figure(figsize=(16,9))
-    plt.plot(train_acc, label='train')
-    plt.plot(test_acc, label='test')
-    plt.xlabel('epochs')
-    plt.ylabel('accuracy')
+    x_axis = [i for i in range(len(train_acc))]
+    plt.plot(x_axis, train_acc, label='train')
+    plt.plot(x_axis, test_acc, label='test')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
     plt.legend()
     plt.grid()
     fig.savefig(path + '/train-test_acc.png')
