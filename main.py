@@ -29,6 +29,7 @@ parser.add_argument('--epochs',type = int, default = 1,metavar = 'EPT',help='Num
 parser.add_argument('--check-thm', default = False, action = 'store_true', help='checking the gdu while training')
 parser.add_argument('--save', default = False, action = 'store_true', help='saving results')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
+parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
 parser.add_argument('--seed',type = int, default = 2, metavar = 's', help='random seed')
 parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='device')
 
@@ -44,11 +45,15 @@ print('\n')
 device = torch.device('cuda:'+str(args.device) if torch.cuda.is_available() else 'cpu')
 
 
-date = datetime.now().strftime('%Y-%m-%d')
-time = datetime.now().strftime('%H-%M-%S')
-path = 'results/'+date+'/'+time+'_gpu'+str(args.device)
-if not(os.path.exists(path)) and args.save:
-    os.makedirs(path)
+if args.save:
+    date = datetime.now().strftime('%Y-%m-%d')
+    time = datetime.now().strftime('%H-%M-%S')
+    if args.load_path=='':
+        path = 'results/'+date+'/'+time+'_gpu'+str(args.device)
+    else:
+        path = args.load_path
+    if not(os.path.exists(path)):
+        os.makedirs(path)
 
 mbs=args.mbs
 torch.manual_seed(args.seed)
@@ -103,33 +108,38 @@ elif args.act=='ctrd_hard_sig':
 
 criterion = torch.nn.MSELoss(reduction='none')
 
-if args.model=='MLP':
-    model = P_MLP(args.archi, activation=activation)
-elif args.model=='CNN':
 
-    if args.task=='MNIST':
-        pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPoll2d(2, stride=2)]
-        model = P_CNN(28, [1, 32, 64], [5, 5], [1, 1], [10], pools, activation=activation)
+if args.load_path=='':
+    if args.model=='MLP':
+        model = P_MLP(args.archi, activation=activation)
+    elif args.model=='CNN':
 
-    elif args.task=='CIFAR10':    
-        if args.pool=='max':
-            pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPool2d(2, stride=2), torch.nn.Identity()] 
-            strides = [1,1,1]
-        elif args.pool=='avg':
-            pools = [torch.nn.AvgPool2d(2, stride=2), torch.nn.AvgPool2d(2, stride=2), torch.nn.Identity()]
-            strides = [1,1,1]
-        elif args.pool=='id':
-            pools = [torch.nn.Identity(), torch.nn.Identity(), torch.nn.Identity()]
-            strides = [2,2,1]
-        model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, activation=activation)
-    print('\n')
-    print('Poolings =', model.pools)
+        if args.task=='MNIST':
+            pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPoll2d(2, stride=2)]
+            model = P_CNN(28, [1, 32, 64], [5, 5], [1, 1], [10], pools, activation=activation)
 
-print(model)
+        elif args.task=='CIFAR10':    
+            if args.pool=='max':
+                pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPool2d(2, stride=2), torch.nn.Identity()] 
+                strides = [1,1,1]
+            elif args.pool=='avg':
+                pools = [torch.nn.AvgPool2d(2, stride=2), torch.nn.AvgPool2d(2, stride=2), torch.nn.Identity()]
+                strides = [1,1,1]
+            elif args.pool=='id':
+                pools = [torch.nn.Identity(), torch.nn.Identity(), torch.nn.Identity()]
+                strides = [2,2,1]
+            model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, activation=activation)
+        print('\n')
+        print('Poolings =', model.pools)
+
+else:
+   model = torch.load(args.load_path + '/model.pt')
+
 model.to(device)
-
+print(model)
 
 betas = args.betas[0], args.betas[1]
+
 
 if args.todo=='train':
     assert(len(args.lrs)==len(model.synapses))
@@ -140,9 +150,21 @@ if args.todo=='train':
         optimizer = torch.optim.SGD( optim_params )
     elif args.optim=='adam':
         optimizer = torch.optim.Adam( optim_params )
-
+    
+    if args.load_path!='':
+        checkpoint = torch.load(args.load_path + '/checkpoint.tar')
+        optimizer.load_state_dict(checkpoint['opt'])
+    else: 
+        checkpoint = None
+    
     print(optimizer)
-    train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, epochs=args.epochs, criterion=criterion, check_thm=args.check_thm, save=args.save, path=path)
+    train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, epochs=args.epochs, criterion=criterion, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint)
+
+
+
+
+
+
 
 elif args.todo=='gducheck':
 
@@ -154,3 +176,11 @@ elif args.todo=='gducheck':
     RMSE(BPTT, EP)
     if args.save:
         plot_gdu(BPTT, EP, path)
+
+
+
+
+
+
+
+

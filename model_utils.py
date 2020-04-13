@@ -458,11 +458,22 @@ def plot_synapses(model, path):
     fig.savefig(path)
     plt.close()
 
+def plot_acc(train_acc, test_acc, path):
+    fig = plt.figure(figsize=(16,9))
+    plt.plot(train_acc, label='train')
+    plt.plot(test_acc, label='test')
+    plt.xlabel('epochs')
+    plt.ylabel('accuracy')
+    plt.legend()
+    plt.grid()
+    fig.savefig(path + '/train-test_acc.png')
+    plt.close()
+ 
     
     
 
         
-def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs=1, criterion=torch.nn.MSELoss(reduction='none'), save=False, check_thm=False, path=''):
+def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs=1, criterion=torch.nn.MSELoss(reduction='none'), save=False, check_thm=False, path='', checkpoint=None):
     
     model.train()
     mbs = train_loader.batch_size
@@ -470,9 +481,17 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
     iter_per_epochs = len(train_loader.dataset)//mbs
     beta_1, beta_2 = betas
     
-    best = 0.0
-    train_acc = [0.1]
-    
+    if checkpoint is None:
+        train_acc = [10.0]
+        test_acc = [10.0]
+        best = 0.0
+        epoch_sofar = 0
+    else:
+        train_acc = checkpoint['train_acc']
+        test_acc = checkpoint['test_acc']    
+        best = checkpoint['best']
+        epoch_sofar = checkpoint['epoch']
+
     for epoch in range(epochs):
         run_correct = 0
         run_total = 0
@@ -491,7 +510,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 run_correct += (y == pred).sum().item()
                 run_total += x.size(0)
                 if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)) and save:
-                    plot_neural_activity(neurons_1, path + '/ep-'+str(epoch+1)+'_iter-'+str(idx+1)+'_neural_activity.png')
+                    plot_neural_activity(neurons_1, path + '/ep-'+str(epoch_sofar+epoch+1)+'_iter-'+str(idx+1)+'_neural_activity.png')
             
             # Second phase
             neurons = model(x, y, neurons, T2, beta=beta_2, criterion=criterion)
@@ -511,21 +530,18 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     BPTT, EP = check_gdu(model, x[0:5,:], y[0:5], T1, T2, betas, criterion)
                     RMSE(BPTT, EP)
     
-                run_correct = 0
-                run_total = 0
         
-        test_acc = evaluate(model, test_loader, T1, device)
+        test_correct = evaluate(model, test_loader, T1, device)
+        test_acc_t = test_correct/(len(test_loader.dataset))
         if save:
-            train_acc.append(run_acc)
-            fig = plt.figure(figsize=(16,9))
-            plt.plot(train_acc)
-            fig.savefig(path + '/train_acc.png')
-            plt.close()
-            if test_acc > best:
-                torch.save({'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict() },  path + '/checkpoint.tar')
+            test_acc.append(100*test_acc_t)
+            train_acc.append(100*run_acc)
+            if test_correct > best:
+                best = test_correct
+                torch.save({'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict(),
+                            'train_acc': train_acc, 'test_acc': test_acc, 'best': best , 'epoch': epoch+1},  path + '/checkpoint.tar')
                 torch.save(model, path + '/model.pt')
-                best = test_acc
-            
+            plot_acc(train_acc, test_acc, path)        
             
 def evaluate(model, loader, T, device):
     
