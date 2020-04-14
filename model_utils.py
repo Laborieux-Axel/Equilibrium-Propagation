@@ -82,16 +82,19 @@ class P_MLP(torch.nn.Module):
     def Phi(self, x, y, neurons, beta, criterion):
         
         x = x.view(x.size(0),-1)
-        #y = F.one_hot(y, num_classes=10).double()
         
         layers = [x] + neurons
         
         phi = 0.0
         for idx in range(len(self.synapses)):
             phi += torch.sum( self.synapses[idx](layers[idx]) * layers[idx+1], dim=1).squeeze()
-       
-        #L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()    
-        L = criterion(layers[-1].double(), y).squeeze()     
+        
+        #print(criterion.__class__.__name__, criterion.__class__.__name__.find('MSE')!=-1)
+        if criterion.__class__.__name__.find('MSE')!=-1:
+            y = F.one_hot(y, num_classes=10).double()
+            L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+        else:
+            L = criterion(layers[-1].double(), y).squeeze()     
         phi -= beta*L
         
         return phi
@@ -109,10 +112,10 @@ class P_MLP(torch.nn.Module):
                 phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True)) 
 
                 for idx in range(len(neurons)):
-                    if idx<(len(neurons)-1):
-                        neurons[idx] = self.activation( neurons[idx].grad )
-                    else:
+                    if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
                         neurons[idx] = neurons[idx].grad
+                    else:
+                        neurons[idx] = self.activation( neurons[idx].grad )
                     neurons[idx].requires_grad = True
 
             return neurons
@@ -128,7 +131,10 @@ class P_MLP(torch.nn.Module):
                 grads = torch.autograd.grad(phi, neurons, grad_outputs=torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True)
 
                 for idx in range(len(neurons)):
-                    neurons[idx] = self.activation( grads[idx] )
+                    if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
+                        neurons[idx] = grads[idx]
+                    else:
+                        neurons[idx] = self.activation( grads[idx] )
                     neurons[idx].retain_grad()
             
             return neurons, first_neurons
@@ -331,7 +337,10 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
         neurons, first_neurons = model(x, y, neurons, T2-K, beta=beta_1, criterion=criterion, check_thm=True) # T2-K time step
         
         # final loss
-        loss = (1/(2.0*x.size(0)))*criterion(neurons[-1].double(), F.one_hot(y, num_classes=10).double()).sum(dim=1).squeeze()
+        if criterion.__class__.__name__.find('MSE')!=-1:
+            loss = (1/(2.0*x.size(0)))*criterion(neurons[-1].double(), F.one_hot(y, num_classes=10).double()).sum(dim=1).squeeze()
+        else:
+            loss = (1/(x.size(0)))*criterion(neurons[-1].double(), y).squeeze()
 
         # setting gradients field to zero before backward
         neurons_zero_grad(first_neurons)
@@ -445,7 +454,7 @@ def plot_neural_activity(neurons, path):
         fig.add_subplot(2, N//2+1, idx+1)
         nrn = neurons[idx].cpu().detach().numpy().flatten()
         plt.hist(nrn, 50)
-        plt.xlim((-1.1,1.1))
+        #plt.xlim((-1.1,1.1))
         plt.title('neurons of layer '+str(idx+1))
     fig.savefig(path)
     plt.close()

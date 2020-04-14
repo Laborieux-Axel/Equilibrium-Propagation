@@ -189,7 +189,7 @@ elif args.todo=='gducheck':
     images, labels = dataiter.next()
     images, labels = images.to(device), labels.to(device)
 
-    BPTT, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, betas, torch.nn.MSELoss(reduction='none'))
+    BPTT, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, betas, criterion)
     RMSE(BPTT, EP)
     if args.save:
         plot_gdu(BPTT, EP, path)
