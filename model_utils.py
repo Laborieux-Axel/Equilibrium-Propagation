@@ -537,11 +537,11 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     plot_neural_activity(neurons_1, path + '/ep-'+str(epoch_sofar+epoch+1)+'_iter-'+str(idx+1)+'_neural_activity.png')
             
             # Second phase
-            if random_sign:
+            if random_sign and (beta_1==0.0):
                 rnd_sgn = 2*np.random.randint(2) - 1
                 betas = beta_1, rnd_sgn*beta_2
                 beta_1, beta_2 = betas
-
+            
             neurons = model(x, y, neurons, T2, beta=beta_2, criterion=criterion)
             neurons_2 = copy(neurons)
             
@@ -610,6 +610,7 @@ def createHyperparametersFile(path, args):
         "- T1: {}".format(args.T1) + "\n",
         "- T2: {}".format(args.T2) + "\n", 
         "- betas: {}".format(args.betas) + "\n", 
+        "- random beta_2 sign: {}".format(args.random_sign) + "\n", 
         "- epochs: {}".format(args.epochs) + "\n", 
         "- seed: {}".format(args.seed) + "\n", 
         "- device: {}".format(args.device) + "\n"]
