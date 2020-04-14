@@ -496,7 +496,8 @@ def plot_acc(train_acc, test_acc, path):
     
 
         
-def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs=1, criterion=torch.nn.MSELoss(reduction='none'), save=False, check_thm=False, path='', checkpoint=None):
+def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, 
+                          random_sign=False, save=False, check_thm=False, path='', checkpoint=None):
     
     model.train()
     mbs = train_loader.batch_size
@@ -536,6 +537,11 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     plot_neural_activity(neurons_1, path + '/ep-'+str(epoch_sofar+epoch+1)+'_iter-'+str(idx+1)+'_neural_activity.png')
             
             # Second phase
+            if random_sign:
+                rnd_sgn = 2*np.random.randint(2) - 1
+                betas = beta_1, rnd_sgn*beta_2
+                beta_1, beta_2 = betas
+
             neurons = model(x, y, neurons, T2, beta=beta_2, criterion=criterion)
             neurons_2 = copy(neurons)
             
