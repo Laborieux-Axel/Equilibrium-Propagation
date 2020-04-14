@@ -89,12 +89,12 @@ class P_MLP(torch.nn.Module):
         for idx in range(len(self.synapses)):
             phi += torch.sum( self.synapses[idx](layers[idx]) * layers[idx+1], dim=1).squeeze()
         
-        #print(criterion.__class__.__name__, criterion.__class__.__name__.find('MSE')!=-1)
         if criterion.__class__.__name__.find('MSE')!=-1:
             y = F.one_hot(y, num_classes=10).double()
             L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
         else:
             L = criterion(layers[-1].double(), y).squeeze()     
+        
         phi -= beta*L
         
         return phi
@@ -210,7 +210,6 @@ class P_CNN(torch.nn.Module):
     def Phi(self, x, y, neurons, beta, criterion):
 
         mbs = x.size(0)
-        y = F.one_hot(y, num_classes=10).double()
         
         layers = [x] + neurons
         
@@ -221,8 +220,13 @@ class P_CNN(torch.nn.Module):
                 #phi += torch.sum( self.conv_bias[idx] * layers[idx+1], dim=(1,2,3)).squeeze()
             else:
                 phi += torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
+         
+        if criterion.__class__.__name__.find('MSE')!=-1:
+            y = F.one_hot(y, num_classes=10).double()
+            L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+        else:
+            L = criterion(layers[-1].double(), y).squeeze()     
                     
-        L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()     
         phi -= beta*L
         
         return phi
@@ -240,7 +244,10 @@ class P_CNN(torch.nn.Module):
                 phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True)) 
 
                 for idx in range(len(neurons)):
-                    neurons[idx] = self.activation( neurons[idx].grad )
+                    if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
+                        neurons[idx] = neurons[idx].grad
+                    else:
+                        neurons[idx] = self.activation( neurons[idx].grad )
                     neurons[idx].requires_grad = True
 
             return neurons
@@ -254,11 +261,14 @@ class P_CNN(torch.nn.Module):
                 neurons_zero_grad(neurons)
                 phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
                 grads = torch.autograd.grad(phi, neurons, grad_outputs=torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True)
-                
+ 
                 for idx in range(len(neurons)):
-                    neurons[idx] = self.activation( grads[idx] )
+                    if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
+                        neurons[idx] = grads[idx]
+                    else:
+                        neurons[idx] = self.activation( grads[idx] )
                     neurons[idx].retain_grad()
-            
+                
             return neurons, first_neurons
         
 
