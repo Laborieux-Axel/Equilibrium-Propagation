@@ -82,15 +82,16 @@ class P_MLP(torch.nn.Module):
     def Phi(self, x, y, neurons, beta, criterion):
         
         x = x.view(x.size(0),-1)
-        y = F.one_hot(y, num_classes=10).double()
+        #y = F.one_hot(y, num_classes=10).double()
         
         layers = [x] + neurons
         
         phi = 0.0
         for idx in range(len(self.synapses)):
             phi += torch.sum( self.synapses[idx](layers[idx]) * layers[idx+1], dim=1).squeeze()
-        
-        L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()     
+       
+        #L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()    
+        L = criterion(layers[-1].double(), y).squeeze()     
         phi -= beta*L
         
         return phi
@@ -108,7 +109,10 @@ class P_MLP(torch.nn.Module):
                 phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True)) 
 
                 for idx in range(len(neurons)):
-                    neurons[idx] = self.activation( neurons[idx].grad )
+                    if idx<(len(neurons)-1):
+                        neurons[idx] = self.activation( neurons[idx].grad )
+                    else:
+                        neurons[idx] = neurons[idx].grad
                     neurons[idx].requires_grad = True
 
             return neurons
@@ -394,7 +398,7 @@ def RMSE(BPTT, EP):
         f =  EP[key].pow(2).sum(dim=0).div(K).pow(0.5)
         g = BPTT[key].pow(2).sum(dim=0).div(K).pow(0.5)
         comp = f_g/(1e-10+torch.max(f,g))
-        sign = torch.where(EP[key].sign()*BPTT[key].sign()== -1, torch.ones_like(EP[key]), torch.zeros_like(EP[key]))
+        sign = torch.where(EP[key]*BPTT[key] < 0, torch.ones_like(EP[key]), torch.zeros_like(EP[key]))
         print(key.replace('.','_'), '\t RMSE =', round(comp.mean().item(), 4), '\t SIGN err =', round(sign.mean().item(), 4))
     print('\n')
 
@@ -531,7 +535,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     RMSE(BPTT, EP)
     
         
-        test_correct = evaluate(model, test_loader, T1, device)
+        test_correct = evaluate(model, test_loader, T1, criterion, device)
         test_acc_t = test_correct/(len(test_loader.dataset))
         if save:
             test_acc.append(100*test_acc_t)
@@ -543,7 +547,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 torch.save(model, path + '/model.pt')
             plot_acc(train_acc, test_acc, path)        
             
-def evaluate(model, loader, T, device):
+def evaluate(model, loader, T, criterion, device):
     
     model.eval()
     correct=0
@@ -552,7 +556,7 @@ def evaluate(model, loader, T, device):
     for x, y in loader:
         x, y = x.to(device), y.to(device)
         neurons = model.init_neurons(x.size(0), device)
-        neurons = model(x, y, neurons, T)
+        neurons = model(x, y, neurons, T, criterion=criterion)
         pred = torch.argmax(neurons[-1], dim=1).squeeze()
         correct += (y == pred).sum().item()
 
@@ -562,4 +566,40 @@ def evaluate(model, loader, T, device):
 
 
             
+
+
+
+
+def createHyperparametersFile(path, args):
+
+    hyperparameters = open(path + r"/hyperparameters.txt","w+")
+    L = ["- model: {}".format(args.model) + "\n",
+        "- task: {}".format(args.task) + "\n",
+        "- pool (if CNN): {}".format(args.pool) + "\n",
+        "- archi (if MLP): {}".format(args.archi) + "\n",
+        "- activation: {}".format(args.act) + "\n",
+        "- learning rates: {}".format(args.lrs) + "\n",
+        "- optimizer: {}".format(args.optim) + "\n",
+        "- loss: {}".format(args.loss) + "\n",
+        "- minibatch size: {}".format(args.mbs) + "\n",
+        "- T1: {}".format(args.T1) + "\n",
+        "- T2: {}".format(args.T2) + "\n", 
+        "- betas: {}".format(args.betas) + "\n", 
+        "- epochs: {}".format(args.epochs) + "\n", 
+        "- seed: {}".format(args.seed) + "\n", 
+        "- device: {}".format(args.device) + "\n"]
+   
+    hyperparameters.writelines(L)
+    hyperparameters.close()
+
+
+
+
+
+
+
+
+
+
+
 

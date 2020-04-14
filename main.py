@@ -21,6 +21,7 @@ parser.add_argument('--archi', nargs='+', type = int, default = [784, 512, 10], 
 parser.add_argument('--act',type = str, default = 'mysig', metavar = 'a', help='activation function')
 parser.add_argument('--optim', type = str, default = 'sgd', metavar = 'opt', help='optimizer for training')
 parser.add_argument('--lrs', nargs='+', type = float, default = [], metavar = 'l', help='layer wise lr')
+parser.add_argument('--loss', type = str, default = 'mse', metavar = 'lss', help='loss for training')
 parser.add_argument('--mbs',type = int, default = 20, metavar = 'M', help='minibatch size')
 parser.add_argument('--T1',type = int, default = 20, metavar = 'T1', help='Time of first phase')
 parser.add_argument('--T2',type = int, default = 4, metavar = 'T2', help='Time of second phase')
@@ -54,6 +55,7 @@ if args.save:
         path = args.load_path
     if not(os.path.exists(path)):
         os.makedirs(path)
+    createHyperparametersFile(path, args)
 else:
     path = ''
 
@@ -93,6 +95,9 @@ elif args.task=='CIFAR10':
     test_loader = torch.utils.data.DataLoader(cifar10_test_dset, batch_size=200, shuffle=False, num_workers=1)
 
 
+
+
+
 if args.act=='mysig':
     activation = my_sigmoid
 elif args.act=='sigmoid':
@@ -108,7 +113,14 @@ elif args.act=='ctrd_hard_sig':
 
 
 
-criterion = torch.nn.MSELoss(reduction='none')
+
+if args.loss=='mse':
+    criterion = torch.nn.MSELoss(reduction='none')
+elif args.loss=='cel':
+    criterion = torch.nn.CrossEntropyLoss(reduction='none')
+
+
+
 
 
 if args.load_path=='':
@@ -158,8 +170,11 @@ if args.todo=='train':
         optimizer.load_state_dict(checkpoint['opt'])
     else: 
         checkpoint = None
-    
+
+
+    print('\n', criterion, '\n')
     print(optimizer)
+
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, epochs=args.epochs, criterion=criterion, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint)
 
 
