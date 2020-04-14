@@ -502,7 +502,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
     model.train()
     mbs = train_loader.batch_size
     start = time.time()
-    iter_per_epochs = len(train_loader.dataset)//mbs
+    iter_per_epochs = math.ceil(len(train_loader.dataset)/mbs)
     beta_1, beta_2 = betas
     
     if checkpoint is None:
