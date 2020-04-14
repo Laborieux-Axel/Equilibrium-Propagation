@@ -2,6 +2,8 @@
 
 Reproducing some results of https://arxiv.org/pdf/1905.13633.pdf  
 
+(test: I can edit the README.md)
+
 Check GDU:  
 > python main.py --model 'MLP' --task 'MNIST' --archi 784 512 10 --act 'tanh' --todo 'gducheck' --betas 0.0 0.01 --T1 30 --T2 10 --mbs 50 --device 0  
 
