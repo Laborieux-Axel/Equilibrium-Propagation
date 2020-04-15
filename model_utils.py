@@ -568,7 +568,8 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
             if test_correct > best:
                 best = test_correct
                 torch.save({'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict(),
-                            'train_acc': train_acc, 'test_acc': test_acc, 'best': best , 'epoch': epoch+1},  path + '/checkpoint.tar')
+                            'train_acc': train_acc, 'test_acc': test_acc, 
+                            'best': best, 'epoch': epoch_sofar+epoch+1},  path + '/checkpoint.tar')
                 torch.save(model, path + '/model.pt')
             plot_acc(train_acc, test_acc, path)        
             
