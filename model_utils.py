@@ -102,42 +102,23 @@ class P_MLP(torch.nn.Module):
     
     def forward(self, x, y, neurons, T, beta=0.0, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False):
         
-        mbs = x.size(0)
+        for t in range(T):
+            neurons_zero_grad(neurons)
+            phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
+            init_grads = torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)
+            grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=check_thm)
 
-        if not(check_thm):
-            for t in range(T):
-
-                neurons_zero_grad(neurons)
-                phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
-                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True)) 
-
-                for idx in range(len(neurons)):
-                    if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
-                        neurons[idx] = neurons[idx].grad
-                    else:
-                        neurons[idx] = self.activation( neurons[idx].grad )
-                    neurons[idx].requires_grad = True
-
-            return neurons
-        
-        else:
-            first_neurons = []
             for idx in range(len(neurons)):
-                first_neurons.append(neurons[idx])
-                
-            for t in range(T):
-                neurons_zero_grad(neurons)
-                phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
-                grads = torch.autograd.grad(phi, neurons, grad_outputs=torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True)
-
-                for idx in range(len(neurons)):
-                    if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
-                        neurons[idx] = grads[idx]
-                    else:
-                        neurons[idx] = self.activation( grads[idx] )
+                if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
+                    neurons[idx] = grads[idx]
+                else:
+                    neurons[idx] = self.activation( grads[idx] )
+                if check_thm:
                     neurons[idx].retain_grad()
+                else:
+                    neurons[idx].requires_grad = True
             
-            return neurons, first_neurons
+        return neurons
 
 
     def init_neurons(self, mbs, device):
@@ -233,44 +214,25 @@ class P_CNN(torch.nn.Module):
     
 
     def forward(self, x, y, neurons, T, beta=0.0, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False):
-
-        mbs = x.size(0)
-
-        if not(check_thm):
-            for t in range(T):
-
-                neurons_zero_grad(neurons)
-                phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
-                phi.backward(torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True)) 
-
-                for idx in range(len(neurons)):
-                    if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
-                        neurons[idx] = neurons[idx].grad
-                    else:
-                        neurons[idx] = self.activation( neurons[idx].grad )
-                    neurons[idx].requires_grad = True
-
-            return neurons
-        
-        else:
-            first_neurons = []
-            for idx in range(len(neurons)):
-                first_neurons.append(neurons[idx])
-                
-            for t in range(T):
-                neurons_zero_grad(neurons)
-                phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
-                grads = torch.autograd.grad(phi, neurons, grad_outputs=torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=x.device, requires_grad=True), create_graph=True)
  
-                for idx in range(len(neurons)):
-                    if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
-                        neurons[idx] = grads[idx]
-                    else:
-                        neurons[idx] = self.activation( grads[idx] )
+        for t in range(T):
+            neurons_zero_grad(neurons)
+            phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
+            init_grads = torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)
+            grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=check_thm)
+
+            for idx in range(len(neurons)):
+                if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
+                    neurons[idx] = grads[idx]
+                else:
+                    neurons[idx] = self.activation( grads[idx] )
+                if check_thm:
                     neurons[idx].retain_grad()
-                
-            return neurons, first_neurons
-        
+                else:
+                    neurons[idx].requires_grad = True
+            
+        return neurons
+       
 
     def init_neurons(self, mbs, device):
         
@@ -340,11 +302,13 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
         # detach data and neurons from the graph
         x = x.detach()
         x.requires_grad = True
+        leaf_neurons = []
         for idx in range(len(neurons)):
             neurons[idx] = neurons[idx].detach()
             neurons[idx].requires_grad = True
+            leaf_neurons.append(neurons[idx])
 
-        neurons, first_neurons = model(x, y, neurons, T2-K, beta=beta_1, criterion=criterion, check_thm=True) # T2-K time step
+        neurons = model(x, y, neurons, T2-K, beta=beta_1, criterion=criterion, check_thm=True) # T2-K time step
         
         # final loss
         if criterion.__class__.__name__.find('MSE')!=-1:
@@ -353,7 +317,7 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
             loss = (1/(x.size(0)))*criterion(neurons[-1].double(), y).squeeze()
 
         # setting gradients field to zero before backward
-        neurons_zero_grad(first_neurons)
+        neurons_zero_grad(leaf_neurons)
         model.zero_grad()
 
         # Backpropagation through time
@@ -366,8 +330,8 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
                 BPTT[name].append( update.unsqueeze(0) )  # unsqueeze for time dimension
                 neurons = copy(ref_neurons) # Resetting the neurons to T1-T2 step
         if K!=0:
-            for idx in range(len(first_neurons)):
-                update = torch.empty_like(first_neurons[idx]).copy_(grad_or_zero(first_neurons[idx]))
+            for idx in range(len(leaf_neurons)):
+                update = torch.empty_like(leaf_neurons[idx]).copy_(grad_or_zero(leaf_neurons[idx]))
                 BPTT['neurons_'+str(idx)].append( update.mul(-x.size(0)).unsqueeze(0) )  # unsqueeze for time dimension
 
                                 
