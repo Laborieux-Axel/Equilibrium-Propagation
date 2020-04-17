@@ -29,6 +29,7 @@ parser.add_argument('--betas', nargs='+', type = float, default = [0.0, 0.01], m
 parser.add_argument('--epochs',type = int, default = 1,metavar = 'EPT',help='Number of epochs per tasks')
 parser.add_argument('--check-thm', default = False, action = 'store_true', help='checking the gdu while training')
 parser.add_argument('--random-sign', default = False, action = 'store_true', help='randomly switch beta_2 sign')
+parser.add_argument('--data-aug', default = False, action = 'store_true', help='enabling data augmentation for cifar10')
 parser.add_argument('--save', default = False, action = 'store_true', help='saving results')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
 parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
@@ -74,12 +75,19 @@ if args.task=='MNIST':
     test_loader = torch.utils.data.DataLoader(mnist_dset_test, batch_size=200, shuffle=False, num_workers=1)
 
 elif args.task=='CIFAR10':
+    if args.data_aug:
+        transform_train = torchvision.transforms.Compose([torchvision.transforms.RandomHorizontalFlip(0.5),
+                                                          torchvision.transforms.RandomCrop(size=[32,32], padding=4, padding_mode='edge'),
+                                                          torchvision.transforms.ToTensor(), 
+                                                          torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010))
+                                                         ])   
 
-    transform_train = torchvision.transforms.Compose([#torchvision.transforms.RandomHorizontalFlip(0.5),
-                                                      #torchvision.transforms.RandomCrop(size=[32,32], padding=4, padding_mode='edge'),
-                                                      torchvision.transforms.ToTensor(), 
-                                                      torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010))
-                                                     ])   
+    else:
+         transform_train = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), 
+                                                          torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010))
+                                                         ])   
+
+
 
     transform_test = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), 
                                                      torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010)) ]) 

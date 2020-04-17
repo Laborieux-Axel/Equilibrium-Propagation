@@ -565,6 +565,7 @@ def createHyperparametersFile(path, args):
     hyperparameters = open(path + r"/hyperparameters.txt","w+")
     L = ["- model: {}".format(args.model) + "\n",
         "- task: {}".format(args.task) + "\n",
+        "- data augmentation (if CIFAR10): {}".format(args.data_aug) + "\n",
         "- pool (if CNN): {}".format(args.pool) + "\n",
         "- archi (if MLP): {}".format(args.archi) + "\n",
         "- activation: {}".format(args.act) + "\n",
