@@ -127,6 +127,7 @@ if args.loss=='mse':
     criterion = torch.nn.MSELoss(reduction='none')
 elif args.loss=='cel':
     criterion = torch.nn.CrossEntropyLoss(reduction='none')
+print('loss =', criterion, '\n')
 
 
 
@@ -180,14 +181,10 @@ if args.todo=='train':
     else: 
         checkpoint = None
 
-
-    print('\n', criterion, '\n')
     print(optimizer)
 
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, 
                  random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint)
-
-
 
 
 
