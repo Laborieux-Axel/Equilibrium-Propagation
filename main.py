@@ -34,6 +34,7 @@ parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', hel
 parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
 parser.add_argument('--seed',type = int, default = 2, metavar = 's', help='random seed')
 parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='device')
+parser.add_argument('--local', default = False, action = 'store_true', help='locally connected architectures (default: False)')
 
 args = parser.parse_args()
 
@@ -151,7 +152,7 @@ if args.load_path=='':
             elif args.pool=='id':
                 pools = [torch.nn.Identity(), torch.nn.Identity(), torch.nn.Identity()]
                 strides = [2,2,1]
-            model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, activation=activation)
+            model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, activation=activation, local = args.local)
         print('\n')
         print('Poolings =', model.pools)
 
