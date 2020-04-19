@@ -35,6 +35,8 @@ parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help
 parser.add_argument('--seed',type = int, default = 2, metavar = 's', help='random seed')
 parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='device')
 parser.add_argument('--local', default = False, action = 'store_true', help='locally connected architectures (default: False)')
+parser.add_argument('--thirdphase', default = False, action = 'store_true', help='add third phase for higher order evaluation of the gradient (default: False)')
+parser.add_argument('--softmax', default = False, action = 'store_true', help='softmax loss with parameters (default: False)')
 
 args = parser.parse_args()
 
@@ -184,7 +186,7 @@ if args.todo=='train':
     print(optimizer)
 
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, 
-                 random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint)
+                 random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, thirdphase = args.thirdphase)
 
 
 

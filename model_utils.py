@@ -126,8 +126,9 @@ class P_MLP(torch.nn.Module):
         return neurons
 
 
-    def compute_syn_grads(self, x, y, neurons_1, neurons_2, betas, criterion, check_thm=False):
+    def compute_syn_grads(self, x, y, neurons, betas, criterion, check_thm=False):
         
+        neurons_1, neurons_2 = neurons
         beta_1, beta_2 = betas
         
         self.zero_grad()            # p.grad is zero
@@ -346,29 +347,31 @@ class P_CNN(torch.nn.Module):
         
         return neurons
 
-    def compute_syn_grads(self, x, y, neurons_1, neurons_2, betas, criterion, check_thm=False):
-        
+    def compute_syn_grads(self, x, y, neurons, betas, criterion, check_thm=False):
+
         beta_1, beta_2 = betas
-        
+
         self.zero_grad()            # p.grad is zero
         if not(check_thm):
-            phi_1 = self.Phi(x, y, neurons_1, beta_1, criterion)
+            phi_1 = self.Phi(x, y, neurons[0], beta_1, criterion)
         else:
-            phi_1 = self.Phi(x, y, neurons_1, beta_2, criterion)
+            phi_1 = self.Phi(x, y, neurons[0], beta_2, criterion)
         phi_1 = phi_1.mean()
-        
-        phi_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
-        phi_2 = phi_2.mean()
-        
-        delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
-        delta_phi.backward()  # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
- 
-        
-    
-    
-    
-    
 
+        phi_2 = self.Phi(x, y, neurons[1], beta_2, criterion)
+        phi_2 = phi_2.mean()
+
+        if len(neurons) < 3:    
+            delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)    # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem    
+             
+        else:
+            phi_3 = self.Phi(x, y, neurons[2], - beta_2, criterion)
+            phi_3 = phi_3.mean()
+            delta_phi = (phi_2 - 2*phi_1 + phi_3)/(4*beta_2**2)
+
+        delta_phi.backward() 
+            
+            
 
 def check_gdu(model, x, y, T1, T2, betas, criterion):
     
@@ -443,7 +446,7 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
         neurons_pre = copy(neurons)                                          # neurons at time step t
         neurons = model(x, y, neurons, 1, beta=beta_2, criterion=criterion)  # neurons at time step t+1
         
-        model.compute_syn_grads(x, y, neurons_pre, neurons, betas, criterion, check_thm=True)  # compute the EP parameter update
+        model.compute_syn_grads(x, y, [neurons_pre, neurons], betas, criterion, check_thm=True)  # compute the EP parameter update
         
         # Collect the EP updates forward in time
         for n, p in model.named_parameters():
@@ -486,7 +489,7 @@ def RMSE(BPTT, EP):
 
         
 def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, 
-                          random_sign=False, save=False, check_thm=False, path='', checkpoint=None):
+                          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False):
     
     model.train()
     mbs = train_loader.batch_size
@@ -531,10 +534,22 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 betas = beta_1, rnd_sgn*beta_2
                 beta_1, beta_2 = betas
             
-            neurons = model(x, y, neurons, T2, beta=beta_2, criterion=criterion)
+            neurons = model(x, y, neurons, T2, beta = beta_2, criterion=criterion)
             neurons_2 = copy(neurons)
+            neurons_tab = [neurons_1, neurons_2]
+
+
+            # Third phase (if we approximate f' as f'(x) = (f(x+h) - 2f(x) + f(x-h))/h^2)
+            if thirdphase:
+                #come back to the first equilibrium
+                neurons = copy(neurons_1)
+                neurons = model(x, y, neurons, T2, beta = - beta_2, criterion=criterion)
+                neurons_3 = copy(neurons)
+                neurons_tab.append(neurons_3)
             
-            model.compute_syn_grads(x, y, neurons_1, neurons_2, betas, criterion)
+
+
+            model.compute_syn_grads(x, y, neurons_tab, betas, criterion)
             
             optimizer.step()
             
