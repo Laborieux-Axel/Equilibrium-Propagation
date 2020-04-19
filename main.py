@@ -11,7 +11,7 @@ from datetime import datetime
 import time
 import math
 from model_utils import *
-
+from data_utils import *
 
 parser = argparse.ArgumentParser(description='Eqprop')
 parser.add_argument('--model',type = str, default = 'MLP', metavar = 'm', help='model')
