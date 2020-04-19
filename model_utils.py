@@ -89,13 +89,13 @@ class P_MLP(torch.nn.Module):
         for idx in range(len(self.synapses)):
             phi += torch.sum( self.synapses[idx](layers[idx]) * layers[idx+1], dim=1).squeeze()
         
-        if criterion.__class__.__name__.find('MSE')!=-1:
-            y = F.one_hot(y, num_classes=10).double()
-            L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
-        else:
-            L = criterion(layers[-1].double(), y).squeeze()     
-        
-        phi -= beta*L
+        if beta!=0.0:
+            if criterion.__class__.__name__.find('MSE')!=-1:
+                y = F.one_hot(y, num_classes=10).double()
+                L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+            else:
+                L = criterion(layers[-1].double(), y).squeeze()     
+            phi -= beta*L
         
         return phi
     
@@ -104,7 +104,7 @@ class P_MLP(torch.nn.Module):
         
         for t in range(T):
             neurons_zero_grad(neurons)
-            phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
+            phi = self.Phi(x, y, neurons, beta, criterion)
             init_grads = torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)
             grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=check_thm)
 
@@ -202,13 +202,13 @@ class P_CNN(torch.nn.Module):
             else:
                 phi += torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
          
-        if criterion.__class__.__name__.find('MSE')!=-1:
-            y = F.one_hot(y, num_classes=10).double()
-            L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
-        else:
-            L = criterion(layers[-1].double(), y).squeeze()     
-                    
-        phi -= beta*L
+        if beta!=0.0:
+            if criterion.__class__.__name__.find('MSE')!=-1:
+                y = F.one_hot(y, num_classes=10).double()
+                L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+            else:
+                L = criterion(layers[-1].double(), y).squeeze()             
+            phi -= beta*L
         
         return phi
     
@@ -217,7 +217,7 @@ class P_CNN(torch.nn.Module):
  
         for t in range(T):
             neurons_zero_grad(neurons)
-            phi = self.Phi(x, y, neurons, beta=beta, criterion=criterion)
+            phi = self.Phi(x, y, neurons, beta, criterion)
             init_grads = torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)
             grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=check_thm)
 
@@ -524,7 +524,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     RMSE(BPTT, EP)
     
         
-        test_correct = evaluate(model, test_loader, T1, criterion, device)
+        test_correct = evaluate(model, test_loader, T1, device)
         test_acc_t = test_correct/(len(test_loader.dataset))
         if save:
             test_acc.append(100*test_acc_t)
@@ -537,7 +537,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 torch.save(model, path + '/model.pt')
             plot_acc(train_acc, test_acc, path)        
             
-def evaluate(model, loader, T, criterion, device):
+def evaluate(model, loader, T, device):
     
     model.eval()
     correct=0
@@ -546,7 +546,7 @@ def evaluate(model, loader, T, criterion, device):
     for x, y in loader:
         x, y = x.to(device), y.to(device)
         neurons = model.init_neurons(x.size(0), device)
-        neurons = model(x, y, neurons, T, criterion=criterion)
+        neurons = model(x, y, neurons, T)
         pred = torch.argmax(neurons[-1], dim=1).squeeze()
         correct += (y == pred).sum().item()
 
