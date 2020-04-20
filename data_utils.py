@@ -131,6 +131,8 @@ def createHyperparametersFile(path, args):
         "- T2: {}".format(args.T2) + "\n", 
         "- betas: {}".format(args.betas) + "\n", 
         "- random beta_2 sign: {}".format(args.random_sign) + "\n", 
+        "- thirdphase: {}".format(args.thirdphase) + "\n", 
+        "- softmax: {}".format(args.softmax) + "\n", 
         "- epochs: {}".format(args.epochs) + "\n", 
         "- seed: {}".format(args.seed) + "\n", 
         "- device: {}".format(args.device) + "\n"]
