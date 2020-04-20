@@ -520,7 +520,7 @@ def RMSE(BPTT, EP):
 
         
 def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, 
-                          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False):
+                          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, save_nrn=False):
     
     model.train()
     mbs = train_loader.batch_size
@@ -561,7 +561,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
 
                 run_correct += (y == pred).sum().item()
                 run_total += x.size(0)
-                if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)) and save:
+                if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)) and save_nrn:
                     plot_neural_activity(neurons_1, path + '/ep-'+str(epoch_sofar+epoch+1)+'_iter-'+str(idx+1)+'_neural_activity.png')
             
             # Second phase

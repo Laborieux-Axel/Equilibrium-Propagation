@@ -32,6 +32,7 @@ parser.add_argument('--check-thm', default = False, action = 'store_true', help=
 parser.add_argument('--random-sign', default = False, action = 'store_true', help='randomly switch beta_2 sign')
 parser.add_argument('--data-aug', default = False, action = 'store_true', help='enabling data augmentation for cifar10')
 parser.add_argument('--save', default = False, action = 'store_true', help='saving results')
+parser.add_argument('--save-nrn', default = False, action = 'store_true', help='saving histograms of neurons activity')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
 parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
 parser.add_argument('--seed',type = int, default = 2, metavar = 's', help='random seed')
@@ -186,7 +187,8 @@ if args.todo=='train':
     print(optimizer)
 
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, 
-                 random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, thirdphase = args.thirdphase)
+                 random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, thirdphase=args.thirdphase, 
+                 save_nrn=args.save_nrn)
 
 
 
