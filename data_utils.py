@@ -126,6 +126,7 @@ def createHyperparametersFile(path, args):
         "- learning rates: {}".format(args.lrs) + "\n",
         "- optimizer: {}".format(args.optim) + "\n",
         "- loss: {}".format(args.loss) + "\n",
+        "- alg: {}".format(args.alg) + "\n",
         "- minibatch size: {}".format(args.mbs) + "\n",
         "- T1: {}".format(args.T1) + "\n",
         "- T2: {}".format(args.T2) + "\n", 

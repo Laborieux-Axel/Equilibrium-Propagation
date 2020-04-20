@@ -23,6 +23,7 @@ parser.add_argument('--act',type = str, default = 'mysig', metavar = 'a', help='
 parser.add_argument('--optim', type = str, default = 'sgd', metavar = 'opt', help='optimizer for training')
 parser.add_argument('--lrs', nargs='+', type = float, default = [], metavar = 'l', help='layer wise lr')
 parser.add_argument('--loss', type = str, default = 'mse', metavar = 'lss', help='loss for training')
+parser.add_argument('--alg', type = str, default = 'EP', metavar = 'al', help='EP or BPTT')
 parser.add_argument('--mbs',type = int, default = 20, metavar = 'M', help='minibatch size')
 parser.add_argument('--T1',type = int, default = 20, metavar = 'T1', help='Time of first phase')
 parser.add_argument('--T2',type = int, default = 4, metavar = 'T2', help='Time of second phase')
@@ -185,8 +186,8 @@ if args.todo=='train':
         checkpoint = None
 
     print(optimizer)
-
-    train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, 
+    print('\ntraining algorithm : ',args.alg, '\n')
+    train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, alg=args.alg, 
                  random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, thirdphase=args.thirdphase, 
                  save_nrn=args.save_nrn)
 

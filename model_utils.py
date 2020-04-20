@@ -520,7 +520,7 @@ def RMSE(BPTT, EP):
     
 
         
-def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, 
+def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, alg='EP', 
                           random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, save_nrn=False):
     
     model.train()
@@ -547,56 +547,79 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
         for idx, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device)
             
-            # First phase
             neurons = model.init_neurons(x.size(0), device)
-            neurons = model(x, y, neurons, T1, beta=beta_1, criterion=criterion)
-            neurons_1 = copy(neurons)
-            
+            if alg=='EP':
+                # First phase
+                neurons = model(x, y, neurons, T1, beta=beta_1, criterion=criterion)
+                neurons_1 = copy(neurons)
+            elif alg=='BPTT':
+                neurons = model(x, y, neurons, T1-T2, beta=0.0, criterion=criterion)           
+                # detach data and neurons from the graph
+                x = x.detach()
+                x.requires_grad = True
+                for k in range(len(neurons)):
+                    neurons[k] = neurons[k].detach()
+                    neurons[k].requires_grad = True
+
+                neurons = model(x, y, neurons, T2, beta=0.0, criterion=criterion, check_thm=True) # T2 time step
+
             # Predictions for running accuracy
             with torch.no_grad():
                 if not model.softmax:
-                    pred = torch.argmax(neurons_1[-1], dim=1).squeeze()
+                    pred = torch.argmax(neurons[-1], dim=1).squeeze()
                 else:
                     #WATCH OUT: prediction is different when softmax == True
-                    pred = torch.argmax(F.softmax(model.synapses[-1](neurons_1[-1]), dim = 1), dim = 1).squeeze()
+                    pred = torch.argmax(F.softmax(model.synapses[-1](neurons[-1]), dim = 1), dim = 1).squeeze()
 
                 run_correct += (y == pred).sum().item()
                 run_total += x.size(0)
                 if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)) and save_nrn:
-                    plot_neural_activity(neurons_1, path + '/ep-'+str(epoch_sofar+epoch+1)+'_iter-'+str(idx+1)+'_neural_activity.png')
+                    plot_neural_activity(neurons, path + '/ep-'+str(epoch_sofar+epoch+1)+'_iter-'+str(idx+1)+'_neural_activity.png')
             
-            # Second phase
-            if random_sign and (beta_1==0.0):
-                rnd_sgn = 2*np.random.randint(2) - 1
-                betas = beta_1, rnd_sgn*beta_2
-                beta_1, beta_2 = betas
+            if alg=='EP':
+                # Second phase
+                if random_sign and (beta_1==0.0):
+                    rnd_sgn = 2*np.random.randint(2) - 1
+                    betas = beta_1, rnd_sgn*beta_2
+                    beta_1, beta_2 = betas
             
-            neurons = model(x, y, neurons, T2, beta = beta_2, criterion=criterion)
-            neurons_2 = copy(neurons)
-            neurons_tab = [neurons_1, neurons_2]
+                neurons = model(x, y, neurons, T2, beta = beta_2, criterion=criterion)
+                neurons_2 = copy(neurons)
+                neurons_tab = [neurons_1, neurons_2]
 
-
-            # Third phase (if we approximate f' as f'(x) = (f(x+h) - f(x-h))/2h)
-            if thirdphase:
-                #come back to the first equilibrium
-                neurons = copy(neurons_1)
-                neurons = model(x, y, neurons, T2, beta = - beta_2, criterion=criterion)
-                neurons_3 = copy(neurons)
-                neurons_tab.append(neurons_3)
+                # Third phase (if we approximate f' as f'(x) = (f(x+h) - f(x-h))/2h)
+                if thirdphase:
+                    #come back to the first equilibrium
+                    neurons = copy(neurons_1)
+                    neurons = model(x, y, neurons, T2, beta = - beta_2, criterion=criterion)
+                    neurons_3 = copy(neurons)
+                    neurons_tab.append(neurons_3)
             
+                model.compute_syn_grads(x, y, neurons_tab, betas, criterion)
+                optimizer.step()            
 
+            elif alg=='BPTT':
+         
+                # final loss
+                if criterion.__class__.__name__.find('MSE')!=-1:
+                    loss = (1/(2.0*x.size(0)))*criterion(neurons[-1].double(), F.one_hot(y, num_classes=10).double()).sum(dim=1).squeeze()
+                else:
+                    loss = (1/(x.size(0)))*criterion(neurons[-1].double(), y).squeeze()
 
-            model.compute_syn_grads(x, y, neurons_tab, betas, criterion)
-            
-            optimizer.step()
-            
-            if (idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1):
+                # setting gradients field to zero before backward
+                model.zero_grad()
+
+                # Backpropagation through time
+                loss.backward(torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)) 
+                optimizer.step()
+                        
+            if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)):
                 run_acc = run_correct/run_total
                 print('Epoch :', round(epoch_sofar+epoch+(idx/iter_per_epochs), 2),
                       '\tRun train acc :', round(run_acc,3),'\t('+str(run_correct)+'/'+str(run_total)+')\t',
                       timeSince(start, ((idx+1)+epoch*iter_per_epochs)/(epochs*iter_per_epochs)))
                 
-                if check_thm:
+                if check_thm and alg=='EP':
                     BPTT, EP = check_gdu(model, x[0:5,:], y[0:5], T1, T2, betas, criterion)
                     RMSE(BPTT, EP)
     
