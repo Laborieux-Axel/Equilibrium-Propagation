@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torchvision
 import torch.nn.functional as F
+import matplotlib
+matplotlib.use('Agg')
 
 import os
 from datetime import datetime

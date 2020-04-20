@@ -13,6 +13,10 @@ from data_utils import *
 from itertools import repeat
 from torch.nn.parameter import Parameter
 import collections
+import matplotlib
+matplotlib.use('Agg')
+
+
 
 def my_sigmoid(x):
     return 1/(1+torch.exp(-4*(x-0.5)))

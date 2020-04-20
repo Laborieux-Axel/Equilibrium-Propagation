@@ -4,6 +4,8 @@ import numpy as np
 import torchvision
 import torch.nn.functional as F
 import argparse
+import matplotlib
+matplotlib.use('Agg')
 
 import os
 from datetime import datetime
