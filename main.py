@@ -133,8 +133,6 @@ print('loss =', criterion, '\n')
 
 
 
-
-
 if args.load_path=='':
     if args.model=='MLP':
         model = P_MLP(args.archi, activation=activation)
@@ -154,7 +152,7 @@ if args.load_path=='':
             elif args.pool=='id':
                 pools = [torch.nn.Identity(), torch.nn.Identity(), torch.nn.Identity()]
                 strides = [2,2,1]
-            model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, activation=activation, local = args.local)
+            model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, activation=activation, local = args.local, softmax  = args.softmax)
         print('\n')
         print('Poolings =', model.pools)
 

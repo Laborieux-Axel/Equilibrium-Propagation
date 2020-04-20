@@ -225,7 +225,7 @@ class Conv2dLocal(torch.nn.Module):
 # Convolutional Neural Network
 
 class P_CNN(torch.nn.Module):
-    def __init__(self, in_size, channels, kernels, strides, fc, pools, activation=hard_sigmoid, local = False):
+    def __init__(self, in_size, channels, kernels, strides, fc, pools, activation=hard_sigmoid, local = False, softmax = False):
         super(P_CNN, self).__init__()
 
         # Dimensions used to initialize neurons
@@ -239,10 +239,24 @@ class P_CNN(torch.nn.Module):
         self.pools = pools
         
         self.synapses = torch.nn.ModuleList()
-        #self.conv_bias = []
         
-        size = in_size
 
+        self.softmax = softmax
+
+        """
+        softmax is a boolean function which tells whether we use the parametrized implementation 
+        of the softmax prediction (section 2.9 of overleaf document). In this case, the last layer
+        is *NO LONGER* part of the system: it is *ONLY* used for prediction and it does not interact
+        with the rest of the system, except during nudging through beta*l. So the Phi function is
+        computed until the *PENULTIMATE* layer. 
+
+        This option affects:
+        - Phi method
+        - init_neurons method
+        - train function
+        """
+
+        size = in_size
 
         if not local:
             for idx in range(len(channels)-1): 
@@ -251,8 +265,7 @@ class P_CNN(torch.nn.Module):
                 
                 size = int( (size - kernels[idx])/strides[idx] + 1 )          # size after conv
                 if self.pools[idx].__class__.__name__.find('Pool')!=-1:
-                    size = int( (size - pools[idx].kernel_size)/pools[idx].stride + 1 )   # size after Pool           
-
+                    size = int( (size - pools[idx].kernel_size)/pools[idx].stride + 1 )   # size after Pool
 
         else:
             #input height and width (CIFAR-10)
@@ -278,6 +291,7 @@ class P_CNN(torch.nn.Module):
         size = size * size * channels[-1]
         
         fc_layers = [size] + fc
+
         for idx in range(len(fc)):
             self.synapses.append(torch.nn.Linear(fc_layers[idx], fc_layers[idx+1], bias=True))
         
@@ -285,25 +299,40 @@ class P_CNN(torch.nn.Module):
 
     def Phi(self, x, y, neurons, beta, criterion):
 
-        mbs = x.size(0)
-        
-        layers = [x] + neurons
-        
+        mbs = x.size(0)       
+        layers = [x] + neurons        
         phi = 0.0
-        for idx in range(len(self.synapses)):
-            if self.synapses[idx].__class__.__name__.find('Conv')!=-1:
-                phi += torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1], dim=(1,2,3)).squeeze()     
-                #phi += torch.sum( self.conv_bias[idx] * layers[idx+1], dim=(1,2,3)).squeeze()
-            else:
-                phi += torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
-         
-        if beta!=0.0:
-            if criterion.__class__.__name__.find('MSE')!=-1:
-                y = F.one_hot(y, num_classes=10).double()
-                L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
-            else:
-                L = criterion(layers[-1].double(), y).squeeze()             
-            phi -= beta*L
+
+        #Phi computation changes depending on softmax == True or not
+        if not self.softmax:
+            for idx in range(len(self.synapses)):
+                if self.synapses[idx].__class__.__name__.find('Conv')!=-1:
+                    phi += torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1], dim=(1,2,3)).squeeze()     
+                    #phi += torch.sum( self.conv_bias[idx] * layers[idx+1], dim=(1,2,3)).squeeze()
+                else:
+                    phi += torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
+             
+            if beta!=0.0:
+                if criterion.__class__.__name__.find('MSE')!=-1:
+                    y = F.one_hot(y, num_classes=10).double()
+                    L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+                else:
+                    L = criterion(layers[-1].double(), y).squeeze()             
+                phi -= beta*L
+
+        else:
+            #WATCH OUT: the output layer used for the prediction is no longer part of the system ! Summing until len(self.synapses) - 1 only
+            for idx in range(len(self.synapses) - 1):
+                if self.synapses[idx].__class__.__name__.find('Conv')!=-1:
+                    phi += torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1], dim=(1,2,3)).squeeze()     
+                    #phi += torch.sum( self.conv_bias[idx] * layers[idx+1], dim=(1,2,3)).squeeze()
+                else:
+                    phi += torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
+             
+            #WATCH OUT: the prediction is made with softmax[last weights[penultimate layer]]
+            if beta!=0.0:
+                L = criterion(F.softmax(self.synapses[-1](layers[-1]), dim = 1).double(), y).squeeze()             
+                phi -= beta*L            
         
         return phi
     
@@ -342,9 +371,14 @@ class P_CNN(torch.nn.Module):
 
         size = size * size * self.channels[-1]
         
-        for idx in range(len(self.fc)):
-            neurons.append(torch.zeros((mbs, self.fc[idx]), requires_grad=True, device=device))
-        
+        if not self.softmax:
+            for idx in range(len(self.fc)):
+                neurons.append(torch.zeros((mbs, self.fc[idx]), requires_grad=True, device=device))
+        else:
+            #WATCH OUT: we *REMOVE* the output layer from the system
+            for idx in range(len(self.fc) - 1):
+                neurons.append(torch.zeros((mbs, self.fc[idx]), requires_grad=True, device=device))            
+            
         return neurons
 
     def compute_syn_grads(self, x, y, neurons, betas, criterion, check_thm=False):
@@ -365,9 +399,10 @@ class P_CNN(torch.nn.Module):
             delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)    # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem    
              
         else:
+            #WATCH OUT: higher order estimation of dL/dtheta
             phi_3 = self.Phi(x, y, neurons[2], - beta_2, criterion)
             phi_3 = phi_3.mean()
-            delta_phi = (phi_2 - 2*phi_1 + phi_3)/(4*beta_2**2)
+            delta_phi = -(phi_2 - phi_3)/(2*beta_2)
 
         delta_phi.backward() 
             
@@ -465,11 +500,6 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
     
 
 
-
-
-
-
-
 def RMSE(BPTT, EP):
     print('\nGDU check :')
     for key in BPTT.keys():
@@ -482,9 +512,6 @@ def RMSE(BPTT, EP):
         print(key.replace('.','_'), '\t RMSE =', round(comp.mean().item(), 4), '\t SIGN err =', round(sign.mean().item(), 4))
     print('\n')
 
-    
-
-   
     
 
         
@@ -522,7 +549,12 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
             
             # Predictions for running accuracy
             with torch.no_grad():
-                pred = torch.argmax(neurons_1[-1], dim=1).squeeze()
+                if not model.softmax:
+                    pred = torch.argmax(neurons_1[-1], dim=1).squeeze()
+                else:
+                    #WATCH OUT: prediction is different when softmax == True
+                    pred = torch.argmax(F.softmax(model.synapses[-1](neurons_1[-1]), dim = 1), dim = 1).squeeze()
+
                 run_correct += (y == pred).sum().item()
                 run_total += x.size(0)
                 if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)) and save:
@@ -539,7 +571,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
             neurons_tab = [neurons_1, neurons_2]
 
 
-            # Third phase (if we approximate f' as f'(x) = (f(x+h) - 2f(x) + f(x-h))/h^2)
+            # Third phase (if we approximate f' as f'(x) = (f(x+h) - f(x-h))/2h)
             if thirdphase:
                 #come back to the first equilibrium
                 neurons = copy(neurons_1)
@@ -578,13 +610,6 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
             plot_acc(train_acc, test_acc, path)        
 
 
-
-
-
-
-
-
-
             
 def evaluate(model, loader, T, device):
     
@@ -596,7 +621,13 @@ def evaluate(model, loader, T, device):
         x, y = x.to(device), y.to(device)
         neurons = model.init_neurons(x.size(0), device)
         neurons = model(x, y, neurons, T)
-        pred = torch.argmax(neurons[-1], dim=1).squeeze()
+
+        if not model.softmax:
+            pred = torch.argmax(neurons[-1], dim=1).squeeze()
+        else:
+            #WATCH OUT: prediction is different when softmax == True
+            pred = torch.argmax(F.softmax(model.synapses[-1](neurons[-1]), dim = 1), dim = 1).squeeze()
+
         correct += (y == pred).sum().item()
 
     acc = correct/len(loader.dataset) 
