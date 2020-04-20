@@ -73,7 +73,8 @@ class P_MLP(torch.nn.Module):
         
         self.activation = activation
         self.archi = archi
-        
+        self.softmax = False        
+
         # Synapses
         self.synapses = torch.nn.ModuleList()
         for idx in range(len(archi)-1):
