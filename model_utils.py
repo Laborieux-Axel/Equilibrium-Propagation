@@ -602,15 +602,15 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
          
                 # final loss
                 if criterion.__class__.__name__.find('MSE')!=-1:
-                    loss = (1/(2.0*x.size(0)))*criterion(neurons[-1].double(), F.one_hot(y, num_classes=10).double()).sum(dim=1).squeeze()
+                    loss = 0.5*criterion(neurons[-1].double(), F.one_hot(y, num_classes=10).double()).sum(dim=1).mean().squeeze()
                 else:
-                    loss = (1/(x.size(0)))*criterion(neurons[-1].double(), y).squeeze()
-
+                    loss = criterion(neurons[-1].double(), y).mean().squeeze()
+                
                 # setting gradients field to zero before backward
                 model.zero_grad()
 
                 # Backpropagation through time
-                loss.backward(torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)) 
+                loss.backward()
                 optimizer.step()
                         
             if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)):
