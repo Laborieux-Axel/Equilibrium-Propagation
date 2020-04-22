@@ -143,7 +143,7 @@ if args.load_path=='':
     elif args.model=='CNN':
 
         if args.task=='MNIST':
-            pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPoll2d(2, stride=2)]
+            pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPool2d(2, stride=2)]
             model = P_CNN(28, [1, 32, 64], [5, 5], [1, 1], [10], pools, activation=activation)
 
         elif args.task=='CIFAR10':    
