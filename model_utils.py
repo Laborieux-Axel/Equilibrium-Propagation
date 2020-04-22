@@ -104,14 +104,14 @@ class P_MLP(torch.nn.Module):
     
     def forward(self, x, y, neurons, T, beta=0.0, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False):
         
+        not_mse = (criterion.__class__.__name__.find('MSE')==-1)
         for t in range(T):
-            neurons_zero_grad(neurons)
             phi = self.Phi(x, y, neurons, beta, criterion)
             init_grads = torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)
             grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=check_thm)
 
             for idx in range(len(neurons)):
-                if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
+                if (not_mse and (idx==(len(neurons)-1))):
                     neurons[idx] = grads[idx]
                 else:
                     neurons[idx] = self.activation( grads[idx] )
@@ -344,14 +344,14 @@ class P_CNN(torch.nn.Module):
 
     def forward(self, x, y, neurons, T, beta=0.0, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False):
  
+        not_mse = (criterion.__class__.__name__.find('MSE')==-1)
         for t in range(T):
-            neurons_zero_grad(neurons)
             phi = self.Phi(x, y, neurons, beta, criterion)
             init_grads = torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)
             grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=check_thm)
 
             for idx in range(len(neurons)):
-                if ((criterion.__class__.__name__.find('MSE')==-1) and (idx==(len(neurons)-1))):
+                if ( not_mse and (idx==(len(neurons)-1))):
                     neurons[idx] = grads[idx]
                 else:
                     neurons[idx] = self.activation( grads[idx] )
