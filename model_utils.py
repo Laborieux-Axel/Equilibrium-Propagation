@@ -105,29 +105,40 @@ class P_MLP(torch.nn.Module):
     def forward(self, x, y, neurons, T, beta=0.0, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False):
         
         not_mse = (criterion.__class__.__name__.find('MSE')==-1)
+        mbs = x.size(0)
+        device = x.device
+
         for t in range(T):
             phi = self.Phi(x, y, neurons, beta, criterion)
-            init_grads = torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)
+            init_grads = torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=device, requires_grad=True)
             grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=check_thm)
 
-            for idx in range(len(neurons)):
-                if (not_mse and (idx==(len(neurons)-1))):
-                    neurons[idx] = grads[idx]
-                else:
-                    neurons[idx] = self.activation( grads[idx] )
+            for idx in range(len(neurons)-1):
+                neurons[idx] = self.activation( grads[idx] )
                 if check_thm:
                     neurons[idx].retain_grad()
                 else:
                     neurons[idx].requires_grad = True
-            
+             
+            if not_mse:
+                neurons[-1] = grads[-1]
+            else:
+                neurons[-1] = self.activation( grads[-1] )
+
+            if check_thm:
+                neurons[-1].retain_grad()
+            else:
+                neurons[-1].requires_grad = True
+
         return neurons
 
 
     def init_neurons(self, mbs, device):
         
         neurons = []
+        append = neurons.append
         for size in self.archi[1:]:  
-            neurons.append(torch.zeros((mbs, size), requires_grad=True, device=device))
+            append(torch.zeros((mbs, size), requires_grad=True, device=device))
         return neurons
 
 
@@ -345,44 +356,54 @@ class P_CNN(torch.nn.Module):
     def forward(self, x, y, neurons, T, beta=0.0, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False):
  
         not_mse = (criterion.__class__.__name__.find('MSE')==-1)
+        mbs = x.size(0)
+        device = x.device     
+
         for t in range(T):
             phi = self.Phi(x, y, neurons, beta, criterion)
-            init_grads = torch.tensor([1 for i in range(x.size(0))], dtype=torch.float, device=x.device, requires_grad=True)
+            init_grads = torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=device, requires_grad=True)
             grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=check_thm)
 
-            for idx in range(len(neurons)):
-                if ( not_mse and (idx==(len(neurons)-1))):
-                    neurons[idx] = grads[idx]
-                else:
-                    neurons[idx] = self.activation( grads[idx] )
+            for idx in range(len(neurons)-1):
+                neurons[idx] = self.activation( grads[idx] )
                 if check_thm:
                     neurons[idx].retain_grad()
                 else:
                     neurons[idx].requires_grad = True
-            
+             
+            if not_mse:
+                neurons[-1] = grads[-1]
+            else:
+                neurons[-1] = self.activation( grads[-1] )
+
+            if check_thm:
+                neurons[-1].retain_grad()
+            else:
+                neurons[-1].requires_grad = True
+
         return neurons
        
 
     def init_neurons(self, mbs, device):
         
         neurons = []
-        
+        append = neurons.append
         size = self.in_size
         for idx in range(len(self.channels)-1): 
             size = int( (size - self.kernels[idx])/self.strides[idx] + 1 )                     # size after conv
             if self.pools[idx].__class__.__name__.find('Pool')!=-1:
                 size = int( (size - self.pools[idx].kernel_size)/self.pools[idx].stride + 1 )  # size after Pool
-            neurons.append(torch.zeros((mbs, self.channels[idx+1], size, size), requires_grad=True, device=device))
+            append(torch.zeros((mbs, self.channels[idx+1], size, size), requires_grad=True, device=device))
 
         size = size * size * self.channels[-1]
         
         if not self.softmax:
             for idx in range(len(self.fc)):
-                neurons.append(torch.zeros((mbs, self.fc[idx]), requires_grad=True, device=device))
+                append(torch.zeros((mbs, self.fc[idx]), requires_grad=True, device=device))
         else:
             #WATCH OUT: we *REMOVE* the output layer from the system
             for idx in range(len(self.fc) - 1):
-                neurons.append(torch.zeros((mbs, self.fc[idx]), requires_grad=True, device=device))            
+                append(torch.zeros((mbs, self.fc[idx]), requires_grad=True, device=device))            
             
         return neurons
 
