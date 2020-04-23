@@ -161,6 +161,117 @@ class P_MLP(torch.nn.Module):
         delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
         
 
+         
+# Vector Field Multi-Layer Perceptron
+
+class VF_MLP(torch.nn.Module):
+    def __init__(self, archi, activation=torch.tanh):
+        super(VF_MLP, self).__init__()
+        
+        self.activation = activation
+        self.archi = archi
+        self.softmax = False        
+
+        # Forward synapses
+        self.synapses = torch.nn.ModuleList()
+        for idx in range(len(archi)-1):
+            self.synapses.append(torch.nn.Linear(archi[idx], archi[idx+1], bias=True))
+
+        # Backward synapses
+        self.B_syn = torch.nn.ModuleList()
+        for idx in range(1, len(archi)-1):            
+            self.B_syn.append(torch.nn.Linear(archi[idx+1], archi[idx], bias=False))
+
+
+    def Phi(self, x, y, neurons, beta, criterion):
+        
+        x = x.view(x.size(0),-1)
+        
+        layers = [x] + neurons
+        
+        phis = []
+        for idx in range(len(self.synapses)-1):
+            phi = torch.sum( self.synapses[idx](layers[idx]) * layers[idx+1], dim=1).squeeze()
+            phi += torch.sum( self.B_syn[idx](layers[idx+2]) * layers[idx+1], dim=1).squeeze()
+            phis.append(phi)        
+
+        phi = torch.sum( self.synapses[-1](layers[-2]) * layers[-1], dim=1).squeeze()
+        if beta!=0.0:
+            if criterion.__class__.__name__.find('MSE')!=-1:
+                y = F.one_hot(y, num_classes=10).double()
+                L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+            else:
+                L = criterion(layers[-1].double(), y).squeeze()     
+            phi -= beta*L
+        
+        phis.append(phi)
+
+        return phis
+    
+    
+    def forward(self, x, y, neurons, T, beta=0.0, criterion=torch.nn.MSELoss(reduction='none'), check_thm=False):
+        
+        not_mse = (criterion.__class__.__name__.find('MSE')==-1)
+        mbs = x.size(0)
+        device = x.device
+
+        for t in range(T):
+            phis = self.Phi(x, y, neurons, beta, criterion)
+            for idx in range(len(neurons)-1):
+                init_grad = torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=device, requires_grad=True)
+                grad = torch.autograd.grad(phis[idx], neurons[idx], grad_outputs=init_grad, create_graph=check_thm)
+
+                neurons[idx] = self.activation( grad[0] )
+                if check_thm:
+                    neurons[idx].retain_grad()
+                else:
+                    neurons[idx].requires_grad = True
+             
+            init_grad = torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=device, requires_grad=True)
+            grad = torch.autograd.grad(phis[-1], neurons[-1], grad_outputs=init_grad, create_graph=check_thm)
+            if not_mse:
+                neurons[-1] = grad[0]
+            else:
+                neurons[-1] = self.activation( grad[0] )
+
+            if check_thm:
+                neurons[-1].retain_grad()
+            else:
+                neurons[-1].requires_grad = True
+
+        return neurons
+
+
+    def init_neurons(self, mbs, device):
+        
+        neurons = []
+        append = neurons.append
+        for size in self.archi[1:]:  
+            append(torch.zeros((mbs, size), requires_grad=True, device=device))
+        return neurons
+
+
+    def compute_syn_grads(self, x, y, neurons, betas, criterion, check_thm=False):
+        
+        neurons_1, neurons_2 = neurons
+        beta_1, beta_2 = betas
+        
+        self.zero_grad()            # p.grad is zero
+        if not(check_thm):
+            phis_1 = self.Phi(x, y, neurons_1, beta_1, criterion)
+        else:
+            phis_1 = self.Phi(x, y, neurons_1, beta_2, criterion)
+        
+        phis_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
+     
+        for idx in range(len(neurons)):
+            phi_1 = phis_1[idx].mean()
+            phi_2 = phis_2[idx].mean()
+            delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
+            delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1)
+        
+
+
 #Locally connected layer
 class Conv2dLocal(torch.nn.Module):
  

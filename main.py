@@ -140,6 +140,8 @@ print('loss =', criterion, '\n')
 if args.load_path=='':
     if args.model=='MLP':
         model = P_MLP(args.archi, activation=activation)
+    elif args.model=='VFMLP':
+        model = VF_MLP(args.archi, activation=activation)
     elif args.model=='CNN':
 
         if args.task=='MNIST':
@@ -174,6 +176,10 @@ if args.todo=='train':
     optim_params = []
     for idx in range(len(model.synapses)):
         optim_params.append(  {'params': model.synapses[idx].parameters(), 'lr': args.lrs[idx]}  )
+    if hasattr(model, 'B_syn'):
+        for idx in range(len(model.B_syn)):
+            optim_params.append( {'params': model.B_syn[idx].parameters(), 'lr': args.lrs[idx+1]} )
+
     if args.optim=='sgd':
         optimizer = torch.optim.SGD( optim_params )
     elif args.optim=='adam':
