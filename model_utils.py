@@ -62,7 +62,16 @@ def copy(neurons):
         copy.append(torch.empty_like(n).copy_(n.data).requires_grad_())
     return copy
 
-
+def make_pools(letters):
+    pools = []
+    for p in range(len(letters)):
+        if letters[p]=='m':
+            pools.append( torch.nn.MaxPool2d(2, stride=2) )
+        elif letters[p]=='a':
+            pools.append( torch.nn.AvgPool2d(2, stride=2) )
+        elif letters[p]=='i':
+            pools.append( torch.nn.Identity() )
+    return pools
                 
                 
 # Multi-Layer Perceptron

@@ -16,9 +16,15 @@ from data_utils import *
 
 parser = argparse.ArgumentParser(description='Eqprop')
 parser.add_argument('--model',type = str, default = 'MLP', metavar = 'm', help='model')
-parser.add_argument('--pool',type = str, default = 'max', metavar = 'p', help='pooling')
 parser.add_argument('--task',type = str, default = 'MNIST', metavar = 't', help='task')
+
+parser.add_argument('--pools', type = str, default = 'mm', metavar = 'p', help='pooling')
 parser.add_argument('--archi', nargs='+', type = int, default = [784, 512, 10], metavar = 'A', help='architecture of the network')
+parser.add_argument('--channels', nargs='+', type = int, default = [32, 64], metavar = 'C', help='channels of the convnet')
+parser.add_argument('--kernels', nargs='+', type = int, default = [5, 5], metavar = 'K', help='kernels sizes of the convnet')
+parser.add_argument('--strides', nargs='+', type = int, default = [1, 1], metavar = 'S', help='strides of the convnet')
+parser.add_argument('--fc', nargs='+', type = int, default = [10], metavar = 'S', help='linear classifier of the convnet')
+
 parser.add_argument('--act',type = str, default = 'mysig', metavar = 'a', help='activation function')
 parser.add_argument('--optim', type = str, default = 'sgd', metavar = 'opt', help='optimizer for training')
 parser.add_argument('--lrs', nargs='+', type = float, default = [], metavar = 'l', help='layer wise lr')
@@ -63,7 +69,6 @@ if args.save:
         path = args.load_path
     if not(os.path.exists(path)):
         os.makedirs(path)
-    createHyperparametersFile(path, args)
 else:
     path = ''
 
@@ -138,35 +143,33 @@ print('loss =', criterion, '\n')
 
 
 if args.load_path=='':
+
     if args.model=='MLP':
         model = P_MLP(args.archi, activation=activation)
+
     elif args.model=='VFMLP':
         model = VF_MLP(args.archi, activation=activation)
+
     elif args.model.find('CNN')!=-1:
 
         if args.task=='MNIST':
-            pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPool2d(2, stride=2)]
+            pools = make_pools(args.pools)
+            channels = [1]+args.channels 
             if args.model=='CNN':
-                model = P_CNN(28, [1, 32, 64], [5, 5], [1, 1], [10], pools, activation=activation, local=args.local, softmax=args.softmax)
+                model = P_CNN(28, channels, args.kernels, args.strides, args.fc, 
+                              pools, activation=activation, local=args.local, softmax=args.softmax)
             elif args.model=='VFCNN':
-                model = VF_CNN(28, [1, 32, 64], [5, 5], [1, 1], [10], pools, activation=activation, softmax=args.softmax)
-        elif args.task=='CIFAR10':    
-            if args.pool=='max':
-                pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPool2d(2, stride=2), torch.nn.Identity()] 
-                strides = [1,1,1]
-            elif args.pool=='avg':
-                pools = [torch.nn.AvgPool2d(2, stride=2), torch.nn.AvgPool2d(2, stride=2), torch.nn.Identity()]
-                strides = [1,1,1]
-            elif args.pool=='id':
-                pools = [torch.nn.Identity(), torch.nn.Identity(), torch.nn.Identity()]
-                strides = [2,2,1]
-            if args.model=='CNN':
-                model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, 
-                              activation=activation, local = args.local, softmax = args.softmax)
-            elif args.model=='VFCNN':
-                 model = VF_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, 
-                              activation=activation, softmax = args.softmax)
+                model = VF_CNN(28, channels, args.kernels, args.strides, args.fc, pools, activation=activation, softmax=args.softmax)
 
+        elif args.task=='CIFAR10':    
+           pools = make_pools(args.pools)
+           channels = [3]+args.channels
+           if args.model=='CNN':
+                model = P_CNN(32, channels, args.kernels, args.strides, args.fc, pools, 
+                              activation=activation, local=args.local, softmax=args.softmax)
+           elif args.model=='VFCNN':
+                model = VF_CNN(32, channels, args.kernels, args.strides, args.fc, pools, 
+                              activation=activation, softmax = args.softmax)
 
         print('\n')
         print('Poolings =', model.pools)
@@ -199,15 +202,15 @@ if args.todo=='train':
         optimizer.load_state_dict(checkpoint['opt'])
     else: 
         checkpoint = None
-
+    
     print(optimizer)
     print('\ntraining algorithm : ',args.alg, '\n')
+    if args.save and args.load_path=='':
+        createHyperparametersFile(path, args, model)
+        
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, alg=args.alg, 
-                 random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, thirdphase=args.thirdphase, 
-                 save_nrn=args.save_nrn)
-
-
-
+                 random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, 
+                 thirdphase=args.thirdphase, save_nrn=args.save_nrn)
 
 
 elif args.todo=='gducheck':

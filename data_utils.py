@@ -114,14 +114,11 @@ def plot_acc(train_acc, test_acc, path):
  
 
 
-def createHyperparametersFile(path, args):
+def createHyperparametersFile(path, args, model):
 
     hyperparameters = open(path + r"/hyperparameters.txt","w+")
-    L = ["- model: {}".format(args.model) + "\n",
-        "- task: {}".format(args.task) + "\n",
+    L = ["- task: {}".format(args.task) + "\n",
         "- data augmentation (if CIFAR10): {}".format(args.data_aug) + "\n",
-        "- pool (if CNN): {}".format(args.pool) + "\n",
-        "- archi (if MLP): {}".format(args.archi) + "\n",
         "- activation: {}".format(args.act) + "\n",
         "- learning rates: {}".format(args.lrs) + "\n",
         "- optimizer: {}".format(args.optim) + "\n",
@@ -139,6 +136,9 @@ def createHyperparametersFile(path, args):
         "- device: {}".format(args.device) + "\n"]
    
     hyperparameters.writelines(L)
+    print('\nPoolings :', model.pools, '\n', file=hyperparameters)
+    print(model, file=hyperparameters)
+
     hyperparameters.close()
 
 
