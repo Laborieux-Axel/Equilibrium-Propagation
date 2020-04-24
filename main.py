@@ -142,12 +142,14 @@ if args.load_path=='':
         model = P_MLP(args.archi, activation=activation)
     elif args.model=='VFMLP':
         model = VF_MLP(args.archi, activation=activation)
-    elif args.model=='CNN':
+    elif args.model.find('CNN')!=-1:
 
         if args.task=='MNIST':
             pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPool2d(2, stride=2)]
-            model = P_CNN(28, [1, 32, 64], [5, 5], [1, 1], [10], pools, activation=activation)
-
+            if args.model=='CNN':
+                model = P_CNN(28, [1, 32, 64], [5, 5], [1, 1], [10], pools, activation=activation, local=args.local, softmax=args.softmax)
+            elif args.model=='VFCNN':
+                model = VF_CNN(28, [1, 32, 64], [5, 5], [1, 1], [10], pools, activation=activation, softmax=args.softmax)
         elif args.task=='CIFAR10':    
             if args.pool=='max':
                 pools = [torch.nn.MaxPool2d(2, stride=2), torch.nn.MaxPool2d(2, stride=2), torch.nn.Identity()] 
@@ -158,7 +160,14 @@ if args.load_path=='':
             elif args.pool=='id':
                 pools = [torch.nn.Identity(), torch.nn.Identity(), torch.nn.Identity()]
                 strides = [2,2,1]
-            model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, activation=activation, local = args.local, softmax  = args.softmax)
+            if args.model=='CNN':
+                model = P_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, 
+                              activation=activation, local = args.local, softmax = args.softmax)
+            elif args.model=='VFCNN':
+                 model = VF_CNN(32, [3, 64, 128, 256], [5, 5, 3], strides, [1024, 10], pools, 
+                              activation=activation, softmax = args.softmax)
+
+
         print('\n')
         print('Poolings =', model.pools)
 
