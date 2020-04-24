@@ -470,27 +470,38 @@ class P_CNN(torch.nn.Module):
         not_mse = (criterion.__class__.__name__.find('MSE')==-1)
         mbs = x.size(0)
         device = x.device     
+        
+        if check_thm:
+            for t in range(T):
+                phi = self.Phi(x, y, neurons, beta, criterion)
+                init_grads = torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=device, requires_grad=True)
+                grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=True)
 
-        for t in range(T):
-            phi = self.Phi(x, y, neurons, beta, criterion)
-            init_grads = torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=device, requires_grad=True)
-            grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=check_thm)
-
-            for idx in range(len(neurons)-1):
-                neurons[idx] = self.activation( grads[idx] )
-                if check_thm:
+                for idx in range(len(neurons)-1):
+                    neurons[idx] = self.activation( grads[idx] )
                     neurons[idx].retain_grad()
+             
+                if not_mse:
+                    neurons[-1] = grads[-1]
                 else:
+                    neurons[-1] = self.activation( grads[-1] )
+
+                neurons[-1].retain_grad()
+        else:
+             for t in range(T):
+                phi = self.Phi(x, y, neurons, beta, criterion)
+                init_grads = torch.tensor([1 for i in range(mbs)], dtype=torch.float, device=device, requires_grad=True)
+                grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=False)
+
+                for idx in range(len(neurons)-1):
+                    neurons[idx] = self.activation( grads[idx] )
                     neurons[idx].requires_grad = True
              
-            if not_mse:
-                neurons[-1] = grads[-1]
-            else:
-                neurons[-1] = self.activation( grads[-1] )
+                if not_mse:
+                    neurons[-1] = grads[-1]
+                else:
+                    neurons[-1] = self.activation( grads[-1] )
 
-            if check_thm:
-                neurons[-1].retain_grad()
-            else:
                 neurons[-1].requires_grad = True
 
         return neurons
