@@ -1,39 +1,7 @@
 # Equilibrium Propagation (EP)  
 
 Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)__.  
-
-## Summary table of the command lines arguments  
-
-|Arguments|Description|Examples|
-|-------|---------|------|
-|`model`|Choose MLP or CNN and Vector field.|`--model 'MLP'`, `--model 'VFMLP'`,`--model 'CNN'`,`--model 'VFCNN'`|
-|`task`|Choose the task.|`--task 'MNIST'`, `--task 'CIFAR10'`|
-|`data-aug`|Enable data augmentation for CIFAR10.||
-|`archi`|Layers dimension for MLP.|`--archi 784 512 10`|
-|`channels`|Feature maps for CNN.|`--channels 128 256 512`|
-|`pools`|Layers wise poolings. `m` is maxpool, `a` is avgpool and `i` is no pooling.|`--pools 'mmm'`|
-|`kernels`|Kernel sizes for CNN.|`--kernels 3 3 3`|
-|`strides`|Strides for CNN.|`--strides 1 1 1`|
-|`fc`|Linear classifier|`--fc 10` for one fc layer, `--fc 512 10`|
-|`act`|Activation function for neurons|`--act 'tanh'`,`'mysig'`,`'hard_sigmoid'`|
-|`todo`|Train or check the theorem|`--todo 'train'`,`--todo 'gducheck'`|
-|`check-thm`|Check the theorem while training.||
-|`alg`|EP or BPTT.|`--alg 'EP'`, `--alg 'BPTT'`|
-|`T1`,`T2`|Number of time steps for phase 1 and 2.|`--T1 30 --T2 10`|
-|`betas`|Beta values for EP.|`--betas 0.0 0.1`|
-|`random-sign`|Choose a random sign for beta_2.||
-|`thirdphase`|Two phases 2 are done with beta_2 and -beta_2.||
-|`loss`|Loss functions.|`--loss 'mse'`,`--loss 'cel'`, `--loss 'cel' --softmax`|
-|`optim`|Optimizer for training.|`'sgd'`, `'adam'`|
-|`lrs`|Layer wise learning rates.|`--lrs 0.01 0.005`|
-|`epochs`|Number of epochs.|`--epochs 200`|
-|`mbs`|Minibatch size|`--mbs 128`|
-|`device`|Index of the gpu.|`--device 0`|
-|`save`|Create a folder with results.||
-|`save-nrn`|Plots neurons activation in results folder.||
-|`load-path`|Resume learning.|`--load-path 'results/2020-04-25/10-11-12'`|
-|`seed`|Choose the seed.|`--seed 0`|
-
+See the bottom of the page for a summary of all the command lines.
 
 ## MLP on MNIST:
 
@@ -79,3 +47,36 @@ python main.py --model 'CNN' --task 'CIFAR10' --channels 128 256 512 --kernels 3
 ```
 
 For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--model 'VFCNN'` instead of `--model 'CNN'`.
+
+
+## Summary table of the command lines arguments  
+
+|Arguments|Description|Examples|
+|-------|---------|------|
+|`model`|Choose MLP or CNN and Vector field.|`--model 'MLP'`, `--model 'VFMLP'`,`--model 'CNN'`,`--model 'VFCNN'`|
+|`task`|Choose the task.|`--task 'MNIST'`, `--task 'CIFAR10'`|
+|`data-aug`|Enable data augmentation for CIFAR10.||
+|`archi`|Layers dimension for MLP.|`--archi 784 512 10`|
+|`channels`|Feature maps for CNN.|`--channels 128 256 512`|
+|`pools`|Layers wise poolings. `m` is maxpool, `a` is avgpool and `i` is no pooling.|`--pools 'mmm'`|
+|`kernels`|Kernel sizes for CNN.|`--kernels 3 3 3`|
+|`strides`|Strides for CNN.|`--strides 1 1 1`|
+|`fc`|Linear classifier|`--fc 10` for one fc layer, `--fc 512 10`|
+|`act`|Activation function for neurons|`--act 'tanh'`,`'mysig'`,`'hard_sigmoid'`|
+|`todo`|Train or check the theorem|`--todo 'train'`,`--todo 'gducheck'`|
+|`check-thm`|Check the theorem while training.||
+|`alg`|EP or BPTT.|`--alg 'EP'`, `--alg 'BPTT'`|
+|`T1`,`T2`|Number of time steps for phase 1 and 2.|`--T1 30 --T2 10`|
+|`betas`|Beta values for EP.|`--betas 0.0 0.1`|
+|`random-sign`|Choose a random sign for beta_2.||
+|`thirdphase`|Two phases 2 are done with beta_2 and -beta_2.||
+|`loss`|Loss functions.|`--loss 'mse'`,`--loss 'cel'`, `--loss 'cel' --softmax`|
+|`optim`|Optimizer for training.|`--optim 'sgd'`, `--optim 'adam'`|
+|`lrs`|Layer wise learning rates.|`--lrs 0.01 0.005`|
+|`epochs`|Number of epochs.|`--epochs 200`|
+|`mbs`|Minibatch size|`--mbs 128`|
+|`device`|Index of the gpu.|`--device 0`|
+|`save`|Create a folder with results.||
+|`save-nrn`|Plots neurons activation in results folder.||
+|`load-path`|Resume learning.|`--load-path 'results/2020-04-25/10-11-12'`|
+|`seed`|Choose the seed.|`--seed 0`|
