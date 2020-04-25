@@ -454,6 +454,7 @@ class P_CNN(torch.nn.Module):
                     L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
                 else:
                     L = criterion(layers[-1].double(), y).squeeze()             
+                L = L.float()
                 phi -= beta*L
 
         else:
@@ -467,6 +468,7 @@ class P_CNN(torch.nn.Module):
             #WATCH OUT: the prediction is made with softmax[last weights[penultimate layer]]
             if beta!=0.0:
                 L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).double(), y).squeeze()             
+                L = L.float()
                 phi -= beta*L            
         
         return phi
