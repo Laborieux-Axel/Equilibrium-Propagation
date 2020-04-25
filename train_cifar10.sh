@@ -1,1 +1,1 @@
-python main.py --model 'CNN' --task 'CIFAR10' --optim 'adam' --lrs 5e-5 5e-5 1e-5 7e-6 4e-6 --epochs 1 --act 'hard_sigmoid' --pool 'max' --todo 'train' --betas 0.0 0.5 --T1 200 --T2 20 --mbs 128 --check-thm --random-sign --loss 'mse' --device 0
+python main.py --model 'CNN' --task 'CIFAR10' --channels 128 256 512 --kernels 3 3 3 --pools 'mmm' --strides 1 1 1 --fc 10 --optim 'adam' --lrs 5e-5 5e-5 1e-5 7e-6 --epochs 1 --act 'hard_sigmoid' --todo 'train' --betas 0.0 0.5 --T1 200 --T2 20 --mbs 128 --check-thm --random-sign --loss 'mse' --save --save-nrn  --device 0
