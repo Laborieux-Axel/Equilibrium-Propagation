@@ -1,6 +1,6 @@
 # Equilibrium Propagation (EP)  
 
-Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)__.  
+Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)__ and scaling to CIFAR10.  
 See the bottom of the page for a summary of all the arguments in the command lines.
 
 ## Examples of command lines  
