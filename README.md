@@ -53,7 +53,7 @@ For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--
 ## Summary table of the command lines arguments  
 
 |Arguments|Description|Examples|
-|-------|---------|------|
+|-------|------|------|
 |`model`|Choose MLP or CNN and Vector field.|`--model 'MLP'`, `--model 'VFMLP'`,`--model 'CNN'`,`--model 'VFCNN'`|
 |`task`|Choose the task.|`--task 'MNIST'`, `--task 'CIFAR10'`|
 |`data-aug`|Enable data augmentation for CIFAR10.|`--data-aug`|
