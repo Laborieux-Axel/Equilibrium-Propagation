@@ -56,7 +56,7 @@ For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--
 |-------|---------|------|
 |`model`|Choose MLP or CNN and Vector field.|`--model 'MLP'`, `--model 'VFMLP'`,`--model 'CNN'`,`--model 'VFCNN'`|
 |`task`|Choose the task.|`--task 'MNIST'`, `--task 'CIFAR10'`|
-|`data-aug`|Enable data augmentation for CIFAR10.||
+|`data-aug`|Enable data augmentation for CIFAR10.|`--data-aug`|
 |`archi`|Layers dimension for MLP.|`--archi 784 512 10`|
 |`channels`|Feature maps for CNN.|`--channels 128 256 512`|
 |`pools`|Layers wise poolings. `m` is maxpool, `a` is avgpool and `i` is no pooling.|`--pools 'mmm'`|
@@ -65,19 +65,19 @@ For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--
 |`fc`|Linear classifier|`--fc 10` for one fc layer, `--fc 512 10`|
 |`act`|Activation function for neurons|`--act 'tanh'`,`'mysig'`,`'hard_sigmoid'`|
 |`todo`|Train or check the theorem|`--todo 'train'`,`--todo 'gducheck'`|
-|`check-thm`|Check the theorem while training.||
+|`check-thm`|Check the theorem while training.|`--check-thm`|
 |`alg`|EP or BPTT.|`--alg 'EP'`, `--alg 'BPTT'`|
 |`T1`,`T2`|Number of time steps for phase 1 and 2.|`--T1 30 --T2 10`|
 |`betas`|Beta values for EP.|`--betas 0.0 0.1`|
-|`random-sign`|Choose a random sign for beta_2.||
-|`thirdphase`|Two phases 2 are done with beta_2 and -beta_2.||
+|`random-sign`|Choose a random sign for beta_2.|`--random-sign`|
+|`thirdphase`|Two phases 2 are done with beta_2 and -beta_2.|`--thirdphase`|
 |`loss`|Loss functions.|`--loss 'mse'`,`--loss 'cel'`, `--loss 'cel' --softmax`|
 |`optim`|Optimizer for training.|`--optim 'sgd'`, `--optim 'adam'`|
 |`lrs`|Layer wise learning rates.|`--lrs 0.01 0.005`|
 |`epochs`|Number of epochs.|`--epochs 200`|
 |`mbs`|Minibatch size|`--mbs 128`|
 |`device`|Index of the gpu.|`--device 0`|
-|`save`|Create a folder with results.||
-|`save-nrn`|Plots neurons activation in results folder.||
+|`save`|Create a folder with results.|`--save`|
+|`save-nrn`|Plots neurons activation in results folder.|`--save-nrn`|
 |`load-path`|Resume the training of a saved simulations.|`--load-path 'results/2020-04-25/10-11-12'`|
 |`seed`|Choose the seed.|`--seed 0`|
