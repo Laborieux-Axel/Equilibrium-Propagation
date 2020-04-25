@@ -79,5 +79,5 @@ For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--
 |`device`|Index of the gpu.|`--device 0`|
 |`save`|Create a folder with results.||
 |`save-nrn`|Plots neurons activation in results folder.||
-|`load-path`|Resume learning.|`--load-path 'results/2020-04-25/10-11-12'`|
+|`load-path`|Resume the training of a saved simulations.|`--load-path 'results/2020-04-25/10-11-12'`|
 |`seed`|Choose the seed.|`--seed 0`|
