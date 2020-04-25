@@ -1,9 +1,10 @@
 # Equilibrium Propagation (EP)  
 
 Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)__.  
-See the bottom of the page for a summary of all the command lines.
+See the bottom of the page for a summary of all the arguments in the command lines.
 
-## MLP on MNIST:
+## Examples of command lines  
+### Multi Layer Perceprton on MNIST  
 
 Checking gradient descent updates (GDU) property by setting `--todo 'gducheck'`:  
 ```
@@ -16,9 +17,9 @@ python main.py --model 'MLP' --task 'MNIST' --archi 784 512 10 --lrs 0.08 0.04 -
 ```
 Note that even when training, the GDU theorem can be checked on the fly by setting `--check-thm` regardless of the architecture.  
 
-## CNN on MNIST or CIFAR10:  
+### Convolutional Neural Network on MNIST or CIFAR10    
 
-The training can be done with **Equilibrium Propagation (EP)**  by setting `--alg 'EP'` and three different loss functions:
+The training can be done with **Equilibrium Propagation**  by setting `--alg 'EP'` and three different loss functions:
 
 + Mean Square Error by setting `--loss 'mse'`:
 
