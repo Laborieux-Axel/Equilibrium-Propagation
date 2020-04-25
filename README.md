@@ -59,7 +59,7 @@ For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--
 |`data-aug`|Enable data augmentation for CIFAR10.|`--data-aug`|
 |`archi`|Layers dimension for MLP.|`--archi 784 512 10`|
 |`channels`|Feature maps for CNN.|`--channels 128 256 512`|
-|`pools`|Layers wise poolings. `m` is maxpool, `a` is avgpool and `i` is no pooling.|`--pools 'mmm'`|
+|`pools`|Layers wise poolings. `m` is maxpool, `a` is avgpool and `i` is no pooling. All are kernel size 2 and stride 2.|`--pools 'mmm'` for 3 conv layers.|
 |`kernels`|Kernel sizes for CNN.|`--kernels 3 3 3`|
 |`strides`|Strides for CNN.|`--strides 1 1 1`|
 |`fc`|Linear classifier|`--fc 10` for one fc layer, `--fc 512 10`|
