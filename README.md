@@ -5,7 +5,7 @@ Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)
 ## Summary table of the command lines arguments  
 
 |Flag|Description|Example|
-|----|-----------|-------|
+|-------|-----------|-------|
 |`--model`|choose MLP or CNN and Vector field|`'MLP'`, `'VFMLP'`,`'CNN'`,`'VFCNN'`|
 |`--task`|choose the task|`'MNIST'`, `'CIFAR10'`|
 |`--data-aug`|enable data augmentation for CIFAR10||
