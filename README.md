@@ -15,7 +15,7 @@ Training by setting `--todo 'train'`:
 ```
 python main.py --model 'MLP' --task 'MNIST' --archi 784 512 10 --lrs 0.08 0.04 --epochs 3 --act 'mysig' --todo 'train' --betas 0.0 0.1 --T1 30 --T2 10 --mbs 50 --device 0  
 ```
-Note that during training, the GDU theorem can be checked and printed in the console by setting `--check-thm` regardless of the architecture 8-).  
+Note that during training, the GDU theorem quantifying the similarity between BPTT and EP updates can be checked and printed in the console by setting `--check-thm`.  
 
 ### Convolutional Neural Network on MNIST or CIFAR10    
 
