@@ -17,7 +17,7 @@ Note that even when training, the GDU theorem can be checked on the fly by setti
 
 ## CNN on MNIST or CIFAR10:  
 
-The training can be done with **Equilibrium Propagation (EP)** and three different loss functions:
+The training can be done with **Equilibrium Propagation (EP)**  by setting `--alg 'EP'` and three different loss functions:
 
 + Mean Square Error by setting `--loss 'mse'`:
 
@@ -39,7 +39,7 @@ python main.py --model 'CNN' --task 'CIFAR10' --channels 128 256 512 --kernels 3
 
 The flag `--random-sign` provides a random sign for beta in the second phase, it removes a bias in the estimation of the derivative with respect to beta. It can be replaced by the flag `--thirdphase` where the estimation of the derivative of dPhi is done between -beta and +beta. For the CIFAR10 simulation to be stable it is **mandatory** to use either of the flags.
 
-The training can also be done by **Back Propagation Through Time (BPTT)** and the three same loss functions as above: 
+The training can also be done by **Back Propagation Through Time (BPTT)** via `--alg 'BPTT'` and the three same loss functions as above: 
 
 ```
 python main.py --model 'CNN' --task 'CIFAR10' --channels 128 256 512 --kernels 3 3 3 --pools 'mmm' --strides 1 1 1 --fc 10 --optim 'adam' --lrs 5e-5 5e-5 1e-5 7e-6 --epochs 400 --act 'hard_sigmoid' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'BPTT' --loss 'mse' --save --device 0
