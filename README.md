@@ -4,7 +4,7 @@ Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)
 See the bottom of the page for a summary of all the arguments in the command lines.
 
 ## Examples of command lines  
-### Multi Layer Perceprton on MNIST  
+### Multi Layer Perceptron on MNIST  
 
 Checking gradient descent updates (GDU) property by setting `--todo 'gducheck'`:  
 ```
@@ -15,7 +15,7 @@ Training by setting `--todo 'train'`:
 ```
 python main.py --model 'MLP' --task 'MNIST' --archi 784 512 10 --lrs 0.08 0.04 --epochs 3 --act 'mysig' --todo 'train' --betas 0.0 0.1 --T1 30 --T2 10 --mbs 50 --device 0  
 ```
-Note that even when training, the GDU theorem can be checked on the fly by setting `--check-thm` regardless of the architecture.  
+Note that during training, the GDU theorem can be checked and printed in the console by setting `--check-thm` regardless of the architecture 8-).  
 
 ### Convolutional Neural Network on MNIST or CIFAR10    
 
