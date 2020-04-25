@@ -68,9 +68,9 @@ For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--
 |`alg`|EqProp or BackProp Through Time.|`--alg 'EP'`, `--alg 'BPTT'`|
 |`check-thm`|Check the theorem while training. (only if EP)|`--check-thm`|
 |`T1`,`T2`|Number of time steps for phase 1 and 2.|`--T1 30 --T2 10`|
-|`betas`|Beta values for EP.|`--betas 0.0 0.1`|
-|`random-sign`|Choose a random sign for beta_2.|`--random-sign`|
-|`thirdphase`|Two phases 2 are done with beta_2 and -beta_2.|`--thirdphase`|
+|`betas`|Beta values beta1 and beta2 for EP phases 1 and 2.|`--betas 0.0 0.1`|
+|`random-sign`|Choose a random sign for beta2.|`--random-sign`|
+|`thirdphase`|Two phases 2 are done with beta2 and -beta2.|`--thirdphase`|
 |`loss`|Loss functions.|`--loss 'mse'`,`--loss 'cel'`, `--loss 'cel' --softmax`|
 |`optim`|Optimizer for training.|`--optim 'sgd'`, `--optim 'adam'`|
 |`lrs`|Layer wise learning rates.|`--lrs 0.01 0.005`|
