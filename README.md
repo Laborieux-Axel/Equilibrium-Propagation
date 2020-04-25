@@ -1,6 +1,12 @@
 # Equilibrium Propagation
 
-Reproducing some results of this [paper](https://arxiv.org/pdf/1905.13633.pdf).  
+Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)__.  
+
+## Summary table of the command lines arguments  
+
+| Flag | Description | Example |
+|------|-------------|---------|
+|`--model`| choose MLP or CNN and Vector field|`MLP`, `VFMLP`,`CNN`,`VFCNN`|
 
 ## MLP on MNIST:
 
