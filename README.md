@@ -5,7 +5,7 @@ Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)
 ## Summary table of the command lines arguments  
 
 |Flag|Description|Example|
-|-------|-----------|-------|
+|-------|---------|------|
 |`--model`|choose MLP or CNN and Vector field|`'MLP'`, `'VFMLP'`,`'CNN'`,`'VFCNN'`|
 |`--task`|choose the task|`'MNIST'`, `'CIFAR10'`|
 |`--data-aug`|enable data augmentation for CIFAR10||
@@ -31,7 +31,7 @@ Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)
 |`--device`|index of the gpu|`0`|
 |`--save`|create a folder with results||
 |`--save-nrn`|plots neurons activation in results folder||
-|`load-path`|resume learning|`'results/2020-04-25/10-11-12'`|
+|`--load-path`|resume learning|`'results/2020-04-25/10-11-12'`|
 |`--seed`|choose the seed|`0`|
 
 
