@@ -38,6 +38,7 @@ parser.add_argument('--epochs',type = int, default = 1,metavar = 'EPT',help='Num
 parser.add_argument('--check-thm', default = False, action = 'store_true', help='checking the gdu while training')
 parser.add_argument('--random-sign', default = False, action = 'store_true', help='randomly switch beta_2 sign')
 parser.add_argument('--data-aug', default = False, action = 'store_true', help='enabling data augmentation for cifar10')
+parser.add_argument('--lr-decay', default = False, action = 'store_true', help='enabling learning rate decay')
 parser.add_argument('--save', default = False, action = 'store_true', help='saving results')
 parser.add_argument('--save-nrn', default = False, action = 'store_true', help='saving histograms of neurons activity')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
@@ -185,6 +186,8 @@ betas = args.betas[0], args.betas[1]
 
 if args.todo=='train':
     assert(len(args.lrs)==len(model.synapses))
+
+    # Constructing the optimizer
     optim_params = []
     for idx in range(len(model.synapses)):
         optim_params.append(  {'params': model.synapses[idx].parameters(), 'lr': args.lrs[idx]}  )
@@ -196,10 +199,19 @@ if args.todo=='train':
         optimizer = torch.optim.SGD( optim_params )
     elif args.optim=='adam':
         optimizer = torch.optim.Adam( optim_params )
-    
+
+    # Constructing the scheduler
+    if args.lr_decay:
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4], gamma=0.1)
+    else:
+        scheduler = None
+
+    # Loading the state when resuming a run
     if args.load_path!='':
         checkpoint = torch.load(args.load_path + '/checkpoint.tar')
         optimizer.load_state_dict(checkpoint['opt'])
+        if checkpoint['scheduler'] is not None and args.lr_decay:
+            scheduler.load_state_dict(checkpoint['scheduler'])
     else: 
         checkpoint = None
     
@@ -208,9 +220,10 @@ if args.todo=='train':
     if args.save and args.load_path=='':
         createHyperparametersFile(path, args, model)
         
+
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, alg=args.alg, 
                  random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, 
-                 thirdphase=args.thirdphase, save_nrn=args.save_nrn)
+                 thirdphase=args.thirdphase, save_nrn=args.save_nrn, scheduler=scheduler)
 
 
 elif args.todo=='gducheck':

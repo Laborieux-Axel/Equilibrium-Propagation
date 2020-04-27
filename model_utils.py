@@ -882,7 +882,7 @@ def RMSE(BPTT, EP):
 
         
 def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, alg='EP', 
-                          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, save_nrn=False):
+          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, save_nrn=False, scheduler=None):
     
     model.train()
     mbs = train_loader.batch_size
@@ -986,7 +986,9 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     BPTT, EP = check_gdu(model, x[0:5,:], y[0:5], T1, T2, betas, criterion)
                     RMSE(BPTT, EP)
     
-        
+        if scheduler is not None:
+            scheduler.step()
+
         test_correct = evaluate(model, test_loader, T1, device)
         test_acc_t = test_correct/(len(test_loader.dataset))
         if save:
@@ -994,9 +996,11 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
             train_acc.append(100*run_acc)
             if test_correct > best:
                 best = test_correct
-                torch.save({'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict(),
+                save_dic = {'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict(),
                             'train_acc': train_acc, 'test_acc': test_acc, 
-                            'best': best, 'epoch': epoch_sofar+epoch+1},  path + '/checkpoint.tar')
+                            'best': best, 'epoch': epoch_sofar+epoch+1}
+                save_dic['scheduler'] = scheduler.state_dict() if scheduler is not None else None
+                torch.save(save_dic,  path + '/checkpoint.tar')
                 torch.save(model, path + '/model.pt')
             plot_acc(train_acc, test_acc, path)        
 

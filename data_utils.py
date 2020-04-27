@@ -119,6 +119,7 @@ def createHyperparametersFile(path, args, model):
     hyperparameters = open(path + r"/hyperparameters.txt","w+")
     L = ["- task: {}".format(args.task) + "\n",
         "- data augmentation (if CIFAR10): {}".format(args.data_aug) + "\n",
+        "- learning rate decay: {}".format(args.lr_decay) + "\n",
         "- activation: {}".format(args.act) + "\n",
         "- learning rates: {}".format(args.lrs) + "\n",
         "- optimizer: {}".format(args.optim) + "\n",
