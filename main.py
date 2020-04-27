@@ -202,7 +202,7 @@ if args.todo=='train':
 
     # Constructing the scheduler
     if args.lr_decay:
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4], gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[150,300], gamma=0.1)
     else:
         scheduler = None
 
