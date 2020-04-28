@@ -43,7 +43,7 @@ parser.add_argument('--save', default = False, action = 'store_true', help='savi
 parser.add_argument('--save-nrn', default = False, action = 'store_true', help='saving histograms of neurons activity')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
 parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
-parser.add_argument('--seed',type = int, default = 2, metavar = 's', help='random seed')
+parser.add_argument('--seed',type = int, default = None, metavar = 's', help='random seed')
 parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='device')
 parser.add_argument('--local', default = False, action = 'store_true', help='locally connected architectures (default: False)')
 parser.add_argument('--thirdphase', default = False, action = 'store_true', help='add third phase for higher order evaluation of the gradient (default: False)')
@@ -74,8 +74,8 @@ else:
     path = ''
 
 mbs=args.mbs
-torch.manual_seed(args.seed)
-
+if args.seed is not None:
+    torch.manual_seed(args.seed)
 
 if args.task=='MNIST':
     transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), torchvision.transforms.Normalize(mean=(0.0,), std=(1.0,))])
