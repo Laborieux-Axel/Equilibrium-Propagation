@@ -73,12 +73,18 @@ if args.save:
 else:
     path = ''
 
+
+
 mbs=args.mbs
 if args.seed is not None:
     torch.manual_seed(args.seed)
 
+
+
+
 if args.task=='MNIST':
-    transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), torchvision.transforms.Normalize(mean=(0.0,), std=(1.0,))])
+    transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), 
+                                                torchvision.transforms.Normalize(mean=(0.0,), std=(1.0,))])
 
     mnist_dset_train = torchvision.datasets.MNIST('./mnist_pytorch', train=True, transform=transform, target_transform=None, download=True)
     train_loader = torch.utils.data.DataLoader(mnist_dset_train, batch_size=mbs, shuffle=True, num_workers=0)
@@ -91,18 +97,16 @@ elif args.task=='CIFAR10':
         transform_train = torchvision.transforms.Compose([torchvision.transforms.RandomHorizontalFlip(0.5),
                                                           torchvision.transforms.RandomCrop(size=[32,32], padding=4, padding_mode='edge'),
                                                           torchvision.transforms.ToTensor(), 
-                                                          torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010))
-                                                         ])   
-
+                                                          torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), 
+                                                                                           std=(3*0.2023, 3*0.1994, 3*0.2010)) ])   
     else:
          transform_train = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), 
-                                                          torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010))
-                                                         ])   
-
-
+                                                          torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), 
+                                                                                           std=(3*0.2023, 3*0.1994, 3*0.2010)) ])   
 
     transform_test = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), 
-                                                     torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(3*0.2023, 3*0.1994, 3*0.2010)) ]) 
+                                                     torchvision.transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), 
+                                                                                      std=(3*0.2023, 3*0.1994, 3*0.2010)) ]) 
 
     cifar10_train_dset = torchvision.datasets.CIFAR10('./cifar10_pytorch', train=True, transform=transform_train, download=True)
     cifar10_test_dset = torchvision.datasets.CIFAR10('./cifar10_pytorch', train=False, transform=transform_test, download=True)
