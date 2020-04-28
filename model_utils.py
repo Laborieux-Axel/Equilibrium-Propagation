@@ -359,7 +359,7 @@ class Conv2dLocal(torch.nn.Module):
 # Convolutional Neural Network
 
 class P_CNN(torch.nn.Module):
-    def __init__(self, in_size, channels, kernels, strides, fc, pools, activation=hard_sigmoid, local = False, softmax = False):
+    def __init__(self, in_size, channels, kernels, strides, fc, pools, activation=hard_sigmoid, local=False, softmax=False):
         super(P_CNN, self).__init__()
 
         # Dimensions used to initialize neurons
@@ -402,26 +402,14 @@ class P_CNN(torch.nn.Module):
                     size = int( (size - pools[idx].kernel_size)/pools[idx].stride + 1 )   # size after Pool
 
         else:
-            #input height and width (CIFAR-10)
-            in_height = 32
-            in_width = 32
-            for idx in range(len(channels)-1): 
-
-                self.synapses.append(Conv2dLocal(in_height, in_width, channels[idx], channels[idx+1], kernels[idx], 
+            for idx in range(len(channels)-1): # assuming square kernels
+                self.synapses.append(Conv2dLocal(size, size, channels[idx], channels[idx+1], kernels[idx], 
                                                      stride=strides[idx], bias=True))
                
-                #update input height and width (after convolution)
-
-                in_height = self.synapses[idx].out_height
-                in_width = self.synapses[idx].out_width
-
+                size = self.synapses[idx].out_height
                 if self.pools[idx].__class__.__name__.find('Pool')!=-1:
-                    in_height = int( (in_height - pools[idx].kernel_size)/pools[idx].stride + 1 )   # height after Pool
-                    in_width = int( (in_width - pools[idx].kernel_size)/pools[idx].stride + 1 )   # width after Pool
-
-            size = in_height             
-
-            
+                    size = int( (size - pools[idx].kernel_size)/pools[idx].stride + 1 )   # size after Pool
+ 
         size = size * size * channels[-1]
         
         fc_layers = [size] + fc
