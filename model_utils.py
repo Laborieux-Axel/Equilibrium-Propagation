@@ -359,7 +359,7 @@ class Conv2dLocal(torch.nn.Module):
 # Convolutional Neural Network
 
 class P_CNN(torch.nn.Module):
-    def __init__(self, in_size, channels, kernels, strides, fc, pools, activation=hard_sigmoid, local=False, softmax=False):
+    def __init__(self, in_size, channels, kernels, strides, fc, pools, paddings, activation=hard_sigmoid, local=False, softmax=False):
         super(P_CNN, self).__init__()
 
         # Dimensions used to initialize neurons
@@ -367,6 +367,7 @@ class P_CNN(torch.nn.Module):
         self.channels = channels
         self.kernels = kernels
         self.strides = strides
+        self.paddings = paddings
         self.fc = fc
         
         self.activation = activation
@@ -395,9 +396,9 @@ class P_CNN(torch.nn.Module):
         if not local:
             for idx in range(len(channels)-1): 
                 self.synapses.append(torch.nn.Conv2d(channels[idx], channels[idx+1], kernels[idx], 
-                                                     stride=strides[idx], bias=True))
+                                                     stride=strides[idx], padding=paddings[idx], bias=True))
                 
-                size = int( (size - kernels[idx])/strides[idx] + 1 )          # size after conv
+                size = int( (size + 2*paddings[idx] - kernels[idx])/strides[idx] + 1 )          # size after conv
                 if self.pools[idx].__class__.__name__.find('Pool')!=-1:
                     size = int( (size - pools[idx].kernel_size)/pools[idx].stride + 1 )   # size after Pool
 
@@ -510,7 +511,7 @@ class P_CNN(torch.nn.Module):
         append = neurons.append
         size = self.in_size
         for idx in range(len(self.channels)-1): 
-            size = int( (size - self.kernels[idx])/self.strides[idx] + 1 )                     # size after conv
+            size = int( (size + 2*self.paddings[idx] - self.kernels[idx])/self.strides[idx] + 1 )   # size after conv
             if self.pools[idx].__class__.__name__.find('Pool')!=-1:
                 size = int( (size - self.pools[idx].kernel_size)/self.pools[idx].stride + 1 )  # size after Pool
             append(torch.zeros((mbs, self.channels[idx+1], size, size), requires_grad=True, device=device))
@@ -550,7 +551,7 @@ class P_CNN(torch.nn.Module):
 # Vector Field Convolutional Neural Network
 
 class VF_CNN(torch.nn.Module):
-    def __init__(self, in_size, channels, kernels, strides, fc, pools, activation=hard_sigmoid, softmax = False):
+    def __init__(self, in_size, channels, kernels, strides, fc, pools, paddings, activation=hard_sigmoid, softmax = False):
         super(VF_CNN, self).__init__()
 
         # Dimensions used to initialize neurons
@@ -558,6 +559,7 @@ class VF_CNN(torch.nn.Module):
         self.channels = channels
         self.kernels = kernels
         self.strides = strides
+        self.paddings = paddings
         self.fc = fc
         
         self.activation = activation
@@ -585,13 +587,13 @@ class VF_CNN(torch.nn.Module):
 
         for idx in range(len(channels)-1): 
             self.synapses.append(torch.nn.Conv2d(channels[idx], channels[idx+1], kernels[idx], 
-                                                 stride=strides[idx], bias=True))
+                                                 stride=strides[idx], padding=paddings[idx], bias=True))
                 
             if idx>0:  # backward synapses except for first layer
                 self.B_syn.append(torch.nn.Conv2d(channels[idx], channels[idx+1], kernels[idx],
-                                                      stride=strides[idx], bias=False))
+                                                      stride=strides[idx], padding=paddings[idx], bias=False))
 
-            size = int( (size - kernels[idx])/strides[idx] + 1 )          # size after conv
+            size = int( (size + 2*paddings[idx] - kernels[idx])/strides[idx] + 1 )          # size after conv
             if self.pools[idx].__class__.__name__.find('Pool')!=-1:
                 size = int( (size - pools[idx].kernel_size)/pools[idx].stride + 1 )   # size after Pool
 
@@ -720,7 +722,7 @@ class VF_CNN(torch.nn.Module):
         append = neurons.append
         size = self.in_size
         for idx in range(len(self.channels)-1): 
-            size = int( (size - self.kernels[idx])/self.strides[idx] + 1 )                     # size after conv
+            size = int( (size + 2*self.paddings[idx] - self.kernels[idx])/self.strides[idx] + 1 )  # size after conv
             if self.pools[idx].__class__.__name__.find('Pool')!=-1:
                 size = int( (size - self.pools[idx].kernel_size)/self.pools[idx].stride + 1 )  # size after Pool
             append(torch.zeros((mbs, self.channels[idx+1], size, size), requires_grad=True, device=device))
