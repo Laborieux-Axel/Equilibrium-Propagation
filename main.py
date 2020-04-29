@@ -30,6 +30,7 @@ parser.add_argument('--act',type = str, default = 'mysig', metavar = 'a', help='
 parser.add_argument('--optim', type = str, default = 'sgd', metavar = 'opt', help='optimizer for training')
 parser.add_argument('--lrs', nargs='+', type = float, default = [], metavar = 'l', help='layer wise lr')
 parser.add_argument('--wds', nargs='+', type = float, default = None, metavar = 'l', help='layer weight decays')
+parser.add_argument('--mmt',type = float, default = 0.0, metavar = 'mmt', help='Momentum for sgd')
 parser.add_argument('--loss', type = str, default = 'mse', metavar = 'lss', help='loss for training')
 parser.add_argument('--alg', type = str, default = 'EP', metavar = 'al', help='EP or BPTT')
 parser.add_argument('--mbs',type = int, default = 20, metavar = 'M', help='minibatch size')
@@ -209,7 +210,7 @@ if args.todo=='train':
 
 
     if args.optim=='sgd':
-        optimizer = torch.optim.SGD( optim_params, momentum=0.9 )
+        optimizer = torch.optim.SGD( optim_params, momentum=args.mmt )
     elif args.optim=='adam':
         optimizer = torch.optim.Adam( optim_params )
 

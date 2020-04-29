@@ -123,6 +123,7 @@ def createHyperparametersFile(path, args, model):
         "- activation: {}".format(args.act) + "\n",
         "- learning rates: {}".format(args.lrs) + "\n",
         "- weight decays: {}".format(args.wds) + "\n",
+        "- momentum (if sgd): {}".format(args.mmt) + "\n",
         "- optimizer: {}".format(args.optim) + "\n",
         "- loss: {}".format(args.loss) + "\n",
         "- alg: {}".format(args.alg) + "\n",

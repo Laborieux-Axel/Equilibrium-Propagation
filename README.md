@@ -76,6 +76,8 @@ For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--
 |`loss`|Loss functions.|`--loss 'mse'`,`--loss 'cel'`, `--loss 'cel' --softmax`|
 |`optim`|Optimizer for training.|`--optim 'sgd'`, `--optim 'adam'`|
 |`lrs`|Layer wise learning rates.|`--lrs 0.01 0.005`|
+|`wds`|Layer wise weight decays. (`None` by default).|`--wds 1e-4 1e-4`|
+|`mmt`|Global momentum. (if SGD).|`--mmt 0.9`|
 |`epochs`|Number of epochs.|`--epochs 200`|
 |`mbs`|Minibatch size|`--mbs 128`|
 |`device`|Index of the gpu.|`--device 0`|
