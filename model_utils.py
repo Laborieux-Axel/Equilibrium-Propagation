@@ -872,7 +872,7 @@ def RMSE(BPTT, EP):
 
         
 def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, alg='EP', 
-          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, save_nrn=False, scheduler=None):
+          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, scheduler=None):
     
     model.train()
     mbs = train_loader.batch_size

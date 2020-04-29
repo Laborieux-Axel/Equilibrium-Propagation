@@ -228,7 +228,7 @@ if args.todo=='train':
 
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, alg=args.alg, 
                  random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, 
-                 thirdphase=args.thirdphase, save_nrn=args.save_nrn, scheduler=scheduler)
+                 thirdphase=args.thirdphase, scheduler=scheduler)
 
 
 elif args.todo=='gducheck':
