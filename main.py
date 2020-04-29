@@ -29,6 +29,7 @@ parser.add_argument('--fc', nargs='+', type = int, default = [10], metavar = 'S'
 parser.add_argument('--act',type = str, default = 'mysig', metavar = 'a', help='activation function')
 parser.add_argument('--optim', type = str, default = 'sgd', metavar = 'opt', help='optimizer for training')
 parser.add_argument('--lrs', nargs='+', type = float, default = [], metavar = 'l', help='layer wise lr')
+parser.add_argument('--wds', nargs='+', type = float, default = None, metavar = 'l', help='layer weight decays')
 parser.add_argument('--loss', type = str, default = 'mse', metavar = 'lss', help='loss for training')
 parser.add_argument('--alg', type = str, default = 'EP', metavar = 'al', help='EP or BPTT')
 parser.add_argument('--mbs',type = int, default = 20, metavar = 'M', help='minibatch size')
@@ -142,7 +143,7 @@ elif args.act=='ctrd_hard_sig':
 if args.loss=='mse':
     criterion = torch.nn.MSELoss(reduction='none').to(device)
 elif args.loss=='cel':
-    criterion = torch.nn.CrossEntropyLoss(reduction='none')
+    criterion = torch.nn.CrossEntropyLoss(reduction='none').to(device)
 print('loss =', criterion, '\n')
 
 
@@ -195,13 +196,20 @@ if args.todo=='train':
     # Constructing the optimizer
     optim_params = []
     for idx in range(len(model.synapses)):
-        optim_params.append(  {'params': model.synapses[idx].parameters(), 'lr': args.lrs[idx]}  )
+        if args.wds is None:
+            optim_params.append(  {'params': model.synapses[idx].parameters(), 'lr': args.lrs[idx]}  )
+        else:
+            optim_params.append(  {'params': model.synapses[idx].parameters(), 'lr': args.lrs[idx], 'weight_decay': args.wds[idx]}  )
     if hasattr(model, 'B_syn'):
         for idx in range(len(model.B_syn)):
-            optim_params.append( {'params': model.B_syn[idx].parameters(), 'lr': args.lrs[idx+1]} )
+            if args.wds is None:
+                optim_params.append( {'params': model.B_syn[idx].parameters(), 'lr': args.lrs[idx+1]} )
+            else:
+                optim_params.append( {'params': model.B_syn[idx].parameters(), 'lr': args.lrs[idx+1], 'weight_decay': args.wds[idx+1]} )
+
 
     if args.optim=='sgd':
-        optimizer = torch.optim.SGD( optim_params )
+        optimizer = torch.optim.SGD( optim_params, momentum=0.9 )
     elif args.optim=='adam':
         optimizer = torch.optim.Adam( optim_params )
 
