@@ -41,7 +41,6 @@ parser.add_argument('--random-sign', default = False, action = 'store_true', hel
 parser.add_argument('--data-aug', default = False, action = 'store_true', help='enabling data augmentation for cifar10')
 parser.add_argument('--lr-decay', default = False, action = 'store_true', help='enabling learning rate decay')
 parser.add_argument('--save', default = False, action = 'store_true', help='saving results')
-parser.add_argument('--save-nrn', default = False, action = 'store_true', help='saving histograms of neurons activity')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
 parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
 parser.add_argument('--seed',type = int, default = None, metavar = 's', help='random seed')
@@ -141,7 +140,7 @@ elif args.act=='ctrd_hard_sig':
 
 
 if args.loss=='mse':
-    criterion = torch.nn.MSELoss(reduction='none')
+    criterion = torch.nn.MSELoss(reduction='none').to(device)
 elif args.loss=='cel':
     criterion = torch.nn.CrossEntropyLoss(reduction='none')
 print('loss =', criterion, '\n')
