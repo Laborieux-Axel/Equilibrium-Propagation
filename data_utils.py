@@ -120,6 +120,7 @@ def createHyperparametersFile(path, args, model):
     L = ["- task: {}".format(args.task) + "\n",
         "- data augmentation (if CIFAR10): {}".format(args.data_aug) + "\n",
         "- learning rate decay: {}".format(args.lr_decay) + "\n",
+        "- gamma for lr decay: {}".format(args.gamma) + "\n",
         "- activation: {}".format(args.act) + "\n",
         "- learning rates: {}".format(args.lrs) + "\n",
         "- weight decays: {}".format(args.wds) + "\n",

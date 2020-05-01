@@ -42,6 +42,7 @@ parser.add_argument('--check-thm', default = False, action = 'store_true', help=
 parser.add_argument('--random-sign', default = False, action = 'store_true', help='randomly switch beta_2 sign')
 parser.add_argument('--data-aug', default = False, action = 'store_true', help='enabling data augmentation for cifar10')
 parser.add_argument('--lr-decay', default = False, action = 'store_true', help='enabling learning rate decay')
+parser.add_argument('--gamma',type = float, default = 0.1, metavar = 'g', help='division factor for lr scheduler')
 parser.add_argument('--save', default = False, action = 'store_true', help='saving results')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
 parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
@@ -216,7 +217,7 @@ if args.todo=='train':
 
     # Constructing the scheduler
     if args.lr_decay:
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[150,300], gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[50,100,150], gamma=args.gamma)
     else:
         scheduler = None
 
