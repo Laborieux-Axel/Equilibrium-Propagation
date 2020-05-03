@@ -182,9 +182,9 @@ if args.load_path=='':
 
         print('\n')
         print('Poolings =', model.pools)
-
+    model.apply(my_init)
 else:
-   model = torch.load(args.load_path + '/model.pt')
+    model = torch.load(args.load_path + '/model.pt')
 
 model.to(device)
 print(model)

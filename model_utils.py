@@ -72,7 +72,16 @@ def make_pools(letters):
         elif letters[p]=='i':
             pools.append( torch.nn.Identity() )
     return pools
-                
+               
+def my_init(m):
+    if isinstance(m, torch.nn.Linear):
+        torch.nn.init.kaiming_uniform_(m.weight)
+        if m.bias is not None:
+            torch.nn.init.zeros_(m.bias)
+    if isinstance(m, torch.nn.Conv2d):
+        torch.nn.init.kaiming_uniform_(m.weight) 
+        if m.bias is not None:
+            torch.nn.init.zeros_(m.bias)
                 
 # Multi-Layer Perceptron
 
