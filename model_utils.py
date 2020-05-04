@@ -554,10 +554,10 @@ class P_CNN(torch.nn.Module):
         mask = []
         if self.training:
             for idx in range(len(neurons)):
-                mask.append( torch.bernoulli( self.dropouts[idx] * torch.ones_like(neurons[idx][0,:]))/self.dropouts[idx] )
+                mask.append( torch.bernoulli( self.dropouts[idx] * torch.ones_like(neurons[idx]))/self.dropouts[idx] )
         else:
             for idx in range(len(neurons)):
-                mask.append( torch.ones_like(neurons[idx][0,:]) )
+                mask.append( torch.ones_like(neurons[idx]) )
         return mask
 
     def compute_syn_grads(self, x, y, neurons_1, neurons_2, betas, criterion, mask, check_thm=False):
