@@ -479,8 +479,8 @@ class P_CNN(torch.nn.Module):
              
             #WATCH OUT: the prediction is made with softmax[last weights[penultimate layer]]
             if beta!=0.0:
-                L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).float(), y).squeeze()             
-                phi -= beta*L            
+                L = criterion(self.synapses[-1]((layers[-1]*mask[-1]).view(mbs,-1)).float(), y).squeeze()             
+                phi -= (beta/self.dropouts[-1])*L            
         
         return phi
     
@@ -504,7 +504,7 @@ class P_CNN(torch.nn.Module):
                 if not_mse and not(self.softmax):
                     neurons[-1] = grads[-1] * self.dropouts[-1]
                 else:
-                    neurons[-1] = self.activation(grads[-1] * self.dropouts[-1])
+                    neurons[-1] = self.activation(grads[-1] * self.dropouts[-2])
 
                 neurons[-1].retain_grad()
         else:
@@ -520,7 +520,7 @@ class P_CNN(torch.nn.Module):
                 if not_mse and not(self.softmax):
                     neurons[-1] = grads[-1] * self.dropouts[-1]
                 else:
-                    neurons[-1] = self.activation(grads[-1] * self.dropouts[-1])
+                    neurons[-1] = self.activation(grads[-1] * self.dropouts[-2])
 
                 neurons[-1].requires_grad = True
 
@@ -997,7 +997,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     if not model.softmax:
                         loss = criterion(neurons[-1].float(), y).mean().squeeze()
                     else:
-                        loss = criterion(model.synapses[-1](neurons[-1].view(x.size(0),-1)).float(), y).mean().squeeze()
+                        loss = criterion(model.synapses[-1]((neurons[-1]*mask[-1]).view(x.size(0),-1)).float(), y).mean().squeeze()
                 # setting gradients field to zero before backward
                 model.zero_grad()
 
