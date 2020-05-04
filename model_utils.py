@@ -894,7 +894,6 @@ def RMSE(BPTT, EP):
 def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, alg='EP', 
           random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, scheduler=None):
     
-    model.train()
     mbs = train_loader.batch_size
     start = time.time()
     iter_per_epochs = math.ceil(len(train_loader.dataset)/mbs)
@@ -914,7 +913,8 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
     for epoch in range(epochs):
         run_correct = 0
         run_total = 0
-        
+        model.train()
+
         for idx, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device)
             
