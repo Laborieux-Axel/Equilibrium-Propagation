@@ -24,6 +24,7 @@ parser.add_argument('--channels', nargs='+', type = int, default = [32, 64], met
 parser.add_argument('--kernels', nargs='+', type = int, default = [5, 5], metavar = 'K', help='kernels sizes of the convnet')
 parser.add_argument('--strides', nargs='+', type = int, default = [1, 1], metavar = 'S', help='strides of the convnet')
 parser.add_argument('--paddings', nargs='+', type = int, default = [0, 0], metavar = 'P', help='paddings of the conv layers')
+parser.add_argument('--dropouts', nargs='+', type = float, default = [0, 0], metavar = 'D', help='layer wise dropout probabilities')
 parser.add_argument('--fc', nargs='+', type = int, default = [10], metavar = 'S', help='linear classifier of the convnet')
 
 parser.add_argument('--act',type = str, default = 'mysig', metavar = 'a', help='activation function')
@@ -164,7 +165,7 @@ if args.load_path=='':
             pools = make_pools(args.pools)
             channels = [1]+args.channels 
             if args.model=='CNN':
-                model = P_CNN(28, channels, args.kernels, args.strides, args.fc, pools, args.paddings, 
+                model = P_CNN(28, channels, args.kernels, args.strides, args.fc, pools, args.paddings, args.dropouts, 
                                   activation=activation, local=args.local, softmax=args.softmax)
             elif args.model=='VFCNN':
                 model = VF_CNN(28, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
@@ -174,7 +175,7 @@ if args.load_path=='':
            pools = make_pools(args.pools)
            channels = [3]+args.channels
            if args.model=='CNN':
-                model = P_CNN(32, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
+                model = P_CNN(32, channels, args.kernels, args.strides, args.fc, pools, args.paddings, args.dropouts,
                               activation=activation, local=args.local, softmax=args.softmax)
            elif args.model=='VFCNN':
                 model = VF_CNN(32, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
