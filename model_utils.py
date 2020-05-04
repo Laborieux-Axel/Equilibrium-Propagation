@@ -959,7 +959,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     pred = torch.argmax(neurons[-1], dim=1).squeeze()
                 else:
                     #WATCH OUT: prediction is different when softmax == True
-                    pred = torch.argmax(F.softmax(model.synapses[-1](neurons[-1].view(x.size(0),-1)), dim = 1), dim = 1).squeeze()
+                    pred = torch.argmax(F.softmax(model.synapses[-1]((mask[-1]*neurons[-1]).view(x.size(0),-1)), dim = 1), dim = 1).squeeze()
 
                 run_correct += (y == pred).sum().item()
                 run_total += x.size(0)
