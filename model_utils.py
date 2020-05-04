@@ -45,6 +45,9 @@ _triple = _ntuple(3)
 _quadruple = _ntuple(4)
 
 
+
+
+
 def grad_or_zero(x):
     if x.grad is None:
         return torch.zeros_like(x).to(x.device)
@@ -61,6 +64,11 @@ def copy(neurons):
     for n in neurons:
         copy.append(torch.empty_like(n).copy_(n.data).requires_grad_())
     return copy
+
+
+
+
+
 
 def make_pools(letters):
     pools = []
@@ -82,7 +90,12 @@ def my_init(m):
         torch.nn.init.kaiming_uniform_(m.weight) 
         if m.bias is not None:
             torch.nn.init.zeros_(m.bias)
-                
+        
+
+
+
+
+        
 # Multi-Layer Perceptron
 
 class P_MLP(torch.nn.Module):
@@ -111,10 +124,10 @@ class P_MLP(torch.nn.Module):
         
         if beta!=0.0:
             if criterion.__class__.__name__.find('MSE')!=-1:
-                y = F.one_hot(y, num_classes=10).double()
-                L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+                y = F.one_hot(y, num_classes=10)
+                L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
             else:
-                L = criterion(layers[-1].double(), y).squeeze()     
+                L = criterion(layers[-1].float(), y).squeeze()     
             phi -= beta*L
         
         return phi
@@ -215,10 +228,10 @@ class VF_MLP(torch.nn.Module):
         phi = torch.sum( self.synapses[-1](layers[-2]) * layers[-1], dim=1).squeeze()
         if beta!=0.0:
             if criterion.__class__.__name__.find('MSE')!=-1:
-                y = F.one_hot(y, num_classes=10).double()
-                L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+                y = F.one_hot(y, num_classes=10)
+                L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
             else:
-                L = criterion(layers[-1].double(), y).squeeze()     
+                L = criterion(layers[-1].float(), y).squeeze()     
             phi -= beta*L
         
         phis.append(phi)
@@ -448,11 +461,10 @@ class P_CNN(torch.nn.Module):
              
             if beta!=0.0:
                 if criterion.__class__.__name__.find('MSE')!=-1:
-                    y = F.one_hot(y, num_classes=10).double()
-                    L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+                    y = F.one_hot(y, num_classes=10)
+                    L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
                 else:
-                    L = criterion(layers[-1].double(), y).squeeze()             
-                L = L.float()
+                    L = criterion(layers[-1].float(), y).squeeze()             
                 phi -= beta*L
 
         else:
@@ -465,8 +477,7 @@ class P_CNN(torch.nn.Module):
              
             #WATCH OUT: the prediction is made with softmax[last weights[penultimate layer]]
             if beta!=0.0:
-                L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).double(), y).squeeze()             
-                L = L.float()
+                L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).float(), y).squeeze()             
                 phi -= beta*L            
         
         return phi
@@ -646,10 +657,10 @@ class VF_CNN(torch.nn.Module):
             phi = torch.sum( self.synapses[-1](layers[-2].view(mbs,-1)) * layers[-1], dim=1).squeeze()
             if beta!=0.0:
                 if criterion.__class__.__name__.find('MSE')!=-1:
-                    y = F.one_hot(y, num_classes=10).double()
-                    L = 0.5*criterion(layers[-1].double(), y).sum(dim=1).squeeze()   
+                    y = F.one_hot(y, num_classes=10)
+                    L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
                 else:
-                    L = criterion(layers[-1].double(), y).squeeze()             
+                    L = criterion(layers[-1].float(), y).squeeze()             
                 phi -= beta*L
             phis.append(phi)
 
@@ -672,7 +683,7 @@ class VF_CNN(torch.nn.Module):
 
             #WATCH OUT: the prediction is made with softmax[last weights[penultimate layer]]
             if beta!=0.0:
-                L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).double(), y).squeeze()             
+                L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).float(), y).squeeze()             
                 phi -= beta*L            
             phis.append(phi)           
         
@@ -806,12 +817,12 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
         
         # final loss
         if criterion.__class__.__name__.find('MSE')!=-1:
-            loss = (1/(2.0*x.size(0)))*criterion(neurons[-1].double(), F.one_hot(y, num_classes=10).double()).sum(dim=1).squeeze()
+            loss = (1/(2.0*x.size(0)))*criterion(neurons[-1].float(), F.one_hot(y, num_classes=10).float()).sum(dim=1).squeeze()
         else:
             if not model.softmax:
-                loss = (1/(x.size(0)))*criterion(neurons[-1].double(), y).squeeze()
+                loss = (1/(x.size(0)))*criterion(neurons[-1].float(), y).squeeze()
             else:
-                loss = (1/(x.size(0)))*criterion(model.synapses[-1](neurons[-1].view(x.size(0),-1)).double(), y).squeeze()
+                loss = (1/(x.size(0)))*criterion(model.synapses[-1](neurons[-1].view(x.size(0),-1)).float(), y).squeeze()
 
         # setting gradients field to zero before backward
         neurons_zero_grad(leaf_neurons)
@@ -962,12 +973,12 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
          
                 # final loss
                 if criterion.__class__.__name__.find('MSE')!=-1:
-                    loss = 0.5*criterion(neurons[-1].double(), F.one_hot(y, num_classes=10).double()).sum(dim=1).mean().squeeze()
+                    loss = 0.5*criterion(neurons[-1].float(), F.one_hot(y, num_classes=10).float()).sum(dim=1).mean().squeeze()
                 else:
                     if not model.softmax:
-                        loss = criterion(neurons[-1].double(), y).mean().squeeze()
+                        loss = criterion(neurons[-1].float(), y).mean().squeeze()
                     else:
-                        loss = criterion(model.synapses[-1](neurons[-1].view(x.size(0),-1)).double(), y).mean().squeeze()
+                        loss = criterion(model.synapses[-1](neurons[-1].view(x.size(0),-1)).float(), y).mean().squeeze()
                 # setting gradients field to zero before backward
                 model.zero_grad()
 
