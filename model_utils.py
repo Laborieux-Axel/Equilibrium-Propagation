@@ -456,10 +456,10 @@ class P_CNN(torch.nn.Module):
         #Phi computation changes depending on softmax == True or not
         if not self.softmax:
             for idx in range(conv_len):    
-                phi += torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1] * mask[idx], dim=(1,2,3)).squeeze()     
+                phi += torch.sum( self.pools[idx](self.synapses[idx](layers[idx]*mask[idx])) * layers[idx+1]*mask[idx+1], dim=(1,2,3)).squeeze()     
                 #phi += torch.sum( self.conv_bias[idx] * layers[idx+1], dim=(1,2,3)).squeeze()
             for idx in range(conv_len, tot_len):
-                phi += torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1] * mask[idx], dim=1).squeeze()
+                phi += torch.sum( self.synapses[idx]((layers[idx]*mask[idx]).view(mbs,-1)) * layers[idx+1]*mask[idx+1], dim=1).squeeze()
              
             if beta!=0.0:
                 if criterion.__class__.__name__.find('MSE')!=-1:
@@ -472,10 +472,10 @@ class P_CNN(torch.nn.Module):
         else:
             #WATCH OUT: the output layer used for the prediction is no longer part of the system ! Summing until len(self.synapses) - 1 only
             for idx in range(conv_len):
-                phi += torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1] * mask[idx], dim=(1,2,3)).squeeze()     
+                phi += torch.sum( self.pools[idx](self.synapses[idx](layers[idx]*mask[idx])) * layers[idx+1] * mask[idx+1], dim=(1,2,3)).squeeze()     
                 #phi += torch.sum( self.conv_bias[idx] * layers[idx+1], dim=(1,2,3)).squeeze()
             for idx in range(conv_len, tot_len-1):
-                phi += torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1] * mask[idx], dim=1).squeeze()
+                phi += torch.sum( self.synapses[idx]((layers[idx]*mask[idx]).view(mbs,-1)) * layers[idx+1] * mask[idx+1], dim=1).squeeze()
              
             #WATCH OUT: the prediction is made with softmax[last weights[penultimate layer]]
             if beta!=0.0:
@@ -498,7 +498,7 @@ class P_CNN(torch.nn.Module):
                 grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=True)
 
                 for idx in range(len(neurons)-1):
-                    neurons[idx] = self.activation(grads[idx] * self.dropouts[idx])
+                    neurons[idx] = self.activation(grads[idx] * self.dropouts[idx+1])
                     neurons[idx].retain_grad()
              
                 if not_mse and not(self.softmax):
@@ -514,7 +514,7 @@ class P_CNN(torch.nn.Module):
                 grads = torch.autograd.grad(phi, neurons, grad_outputs=init_grads, create_graph=False)
 
                 for idx in range(len(neurons)-1):
-                    neurons[idx] = self.activation(grads[idx] * self.dropouts[idx])
+                    neurons[idx] = self.activation(grads[idx] * self.dropouts[idx+1])
                     neurons[idx].requires_grad = True
              
                 if not_mse and not(self.softmax):
@@ -550,14 +550,15 @@ class P_CNN(torch.nn.Module):
             
         return neurons
 
-    def create_mask(self, neurons):
+    def create_mask(self, x, neurons):
         mask = []
+        layers = [x] + neurons
         if self.training:
-            for idx in range(len(neurons)):
-                mask.append( torch.bernoulli( self.dropouts[idx] * torch.ones_like(neurons[idx]))/self.dropouts[idx] )
+            for idx in range(len(layers)):
+                mask.append( torch.bernoulli( self.dropouts[idx] * torch.ones_like(layers[idx]))/self.dropouts[idx] )
         else:
-            for idx in range(len(neurons)):
-                mask.append( torch.ones_like(neurons[idx]) )
+            for idx in range(len(layers)):
+                mask.append( torch.ones_like(layers[idx]) )
         return mask
 
     def compute_syn_grads(self, x, y, neurons_1, neurons_2, betas, criterion, mask, check_thm=False):
@@ -576,7 +577,13 @@ class P_CNN(torch.nn.Module):
         
         delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
         delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
- 
+        
+        for n, p in self.named_parameters():
+            idx = int(n[9])
+            if n.find('weight')!=-1:
+                p.grad.data.mul_(self.dropouts[idx]*self.dropouts[idx+1])
+            else:
+                p.grad.data.mul_(self.dropouts[idx+1])
            
    
  
@@ -930,7 +937,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
             x, y = x.to(device), y.to(device)
             
             neurons = model.init_neurons(x.size(0), device)
-            mask = model.create_mask(neurons)
+            mask = model.create_mask(x, neurons)
             if alg=='EP':
                 # First phase
                 neurons = model(x, y, neurons, T1, mask, beta=beta_1, criterion=criterion)
@@ -1037,7 +1044,7 @@ def evaluate(model, loader, T, device):
     for x, y in loader:
         x, y = x.to(device), y.to(device)
         neurons = model.init_neurons(x.size(0), device)
-        mask = model.create_mask(neurons) # mask is only ones since model.train is false
+        mask = model.create_mask(x, neurons) # mask is only ones since model.train is false
         neurons = model(x, y, neurons, T, mask)
 
         if not model.softmax:
