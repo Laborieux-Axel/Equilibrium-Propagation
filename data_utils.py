@@ -78,7 +78,7 @@ def plot_neural_activity(neurons, path):
         plt.hist(nrn, 50)
         #plt.xlim((-1.1,1.1))
         plt.title('neurons of layer '+str(idx+1))
-    fig.savefig(path)
+    fig.savefig(path + '/neural_activity.png')
     plt.close()
 
 

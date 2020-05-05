@@ -945,7 +945,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 run_correct += (y == pred).sum().item()
                 run_total += x.size(0)
                 if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)) and save:
-                    plot_neural_activity(neurons, path+'/neural_activity.png')
+                    plot_neural_activity(neurons, path)
             
             if alg=='EP':
                 # Second phase
