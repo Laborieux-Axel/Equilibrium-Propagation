@@ -467,7 +467,7 @@ class P_CNN(torch.nn.Module):
                     L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
                 else:
                     L = criterion(layers[-1].float(), y).squeeze()             
-                phi -= (beta/self.dropouts[-1])*L
+                phi -= beta/*L
 
         else:
             #WATCH OUT: the output layer used for the prediction is no longer part of the system ! Summing until len(self.synapses) - 1 only
@@ -577,14 +577,9 @@ class P_CNN(torch.nn.Module):
         
         delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
         delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
-        
-        for n, p in self.named_parameters():
-            idx = int(n[9])
-            if n.find('weight')!=-1:
-                p.grad.data.mul_(self.dropouts[idx]*self.dropouts[idx+1])
-            else:
-                p.grad.data.mul_(self.dropouts[idx+1])
-           
+       
+
+
    
  
 # Vector Field Convolutional Neural Network
