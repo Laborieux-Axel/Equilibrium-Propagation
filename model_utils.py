@@ -467,7 +467,7 @@ class P_CNN(torch.nn.Module):
                     L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
                 else:
                     L = criterion(layers[-1].float(), y).squeeze()             
-                phi -= beta/*L
+                phi -= beta*L
 
         else:
             #WATCH OUT: the output layer used for the prediction is no longer part of the system ! Summing until len(self.synapses) - 1 only
@@ -480,7 +480,7 @@ class P_CNN(torch.nn.Module):
             #WATCH OUT: the prediction is made with softmax[last weights[penultimate layer]]
             if beta!=0.0:
                 L = criterion(self.synapses[-1]((layers[-1]*mask[-1]).view(mbs,-1)).float(), y).squeeze()             
-                phi -= (beta/self.dropouts[-1])*L            
+                phi -= beta*L            
         
         return phi
     
