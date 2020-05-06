@@ -697,18 +697,27 @@ class VF_CNN(torch.nn.Module):
                     phi += torch.sum( self.B_syn[conv_len-1](layers[conv_len].view(mbs,-1)) * layers[conv_len+1], dim=1).squeeze()            
                     phis.append(phi)            
 
-                for idx in range(conv_len+1, tot_len-2):
-                    phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
-                    phi += torch.sum( self.B_syn[idx](layers[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
-                    phis.append(phi)
+                    for idx in range(conv_len, tot_len-2):
+                        phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
+                        phi += torch.sum( self.B_syn[idx](layers[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
+                        phis.append(phi)
+                    
+                    phi = torch.sum( self.synapses[-2](layers[-2].view(mbs,-1)) * layers[-1], dim=1).squeeze()
+                    if beta!=0.0:
+                        L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).float(), y).squeeze()             
+                        phi -= beta*L
+                    phis.append(phi)                    
 
                 #the prediction is made with softmax[last weights[penultimate layer]]
-                if beta!=0.0:
+                elif beta!=0.0:
                     L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).float(), y).squeeze()             
-                    phis[-1] -= beta*L            
-                           
+                    phi -= beta*L
+                    phis.append(phi)            
+                else:
+                    phis.append(phi)
+           
         else:
-            layers_2 = [x]+neurons_2
+            layers_2 = [x] + neurons_2
             #Phi computation changes depending on softmax == True or not
             if not self.softmax:
 
@@ -745,19 +754,27 @@ class VF_CNN(torch.nn.Module):
             
                 phi = torch.sum( self.pools[conv_len-1](self.synapses[conv_len-1](layers[conv_len-1])) * layers_2[conv_len], dim=(1,2,3)).squeeze()
                 if bck_len>=conv_len:
-                    phi += torch.sum( self.B_syn[conv_len-1](layers_2[conv_len].view(mbs,-1)) * layers[conv_len+1], dim=1).squeeze()            
+                    phi += torch.sum( self.B_syn[conv_len-1](layers_2[conv_len].view(mbs,-1)) * layers[conv_len+1], dim=1).squeeze() 
                     phis.append(phi)            
 
-                for idx in range(conv_len+1, tot_len-2):
-                    phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers_2[idx+1], dim=1).squeeze()
-                    phi += torch.sum( self.B_syn[idx](layers_2[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
-                    phis.append(phi)
+                    for idx in range(conv_len, tot_len-2):
+                        phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers_2[idx+1], dim=1).squeeze()
+                        phi += torch.sum( self.B_syn[idx](layers_2[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
+                        phis.append(phi)
+                     
+                    phi = torch.sum( self.synapses[-2](layers[-2].view(mbs,-1)) * layers_2[-1], dim=1).squeeze()
+                    if beta!=0.0:
+                        L = criterion(self.synapses[-1](layers_2[-1].view(mbs,-1)).float(), y).squeeze()             
+                        phi -= beta*L
+                    phis.append(phi)                    
 
                 #the prediction is made with softmax[last weights[penultimate layer]]
-                if beta!=0.0:
+                elif beta!=0.0:
                     L = criterion(self.synapses[-1](layers_2[-1].view(mbs,-1)).float(), y).squeeze()             
-                    phis[-1] -= beta*L                       
-       
+                    phi -= beta*L                       
+                    phis.append(phi)
+                else:
+                    phis.append(phi)
         return phis
     
 
