@@ -28,7 +28,7 @@ def ctrd_hard_sig(x):
     return (F.hardtanh(2*x))*0.5
 
 def my_hard_sig(x):
-    return 0.5*(my_sigmoid(x)+hard_sigmoid(x))
+    return (1+F.hardtanh(2*x))*0.5
 
 
 

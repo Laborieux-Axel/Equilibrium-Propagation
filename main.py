@@ -42,7 +42,7 @@ parser.add_argument('--check-thm', default = False, action = 'store_true', help=
 parser.add_argument('--random-sign', default = False, action = 'store_true', help='randomly switch beta_2 sign')
 parser.add_argument('--data-aug', default = False, action = 'store_true', help='enabling data augmentation for cifar10')
 parser.add_argument('--lr-decay', default = False, action = 'store_true', help='enabling learning rate decay')
-parser.add_argument('--scale',type = float, default = 0.2, metavar = 'g', help='scal factor for weight init')
+parser.add_argument('--scale',type = float, default = None, metavar = 'g', help='scal factor for weight init')
 parser.add_argument('--save', default = False, action = 'store_true', help='saving results')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
 parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
@@ -182,7 +182,8 @@ if args.load_path=='':
 
         print('\n')
         print('Poolings =', model.pools)
-    model.apply(my_init(args.scale))
+    if args.scale is not None:
+        model.apply(my_init(args.scale))
 else:
     model = torch.load(args.load_path + '/model.pt')
 
