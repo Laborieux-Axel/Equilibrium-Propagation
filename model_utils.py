@@ -22,10 +22,10 @@ def my_sigmoid(x):
     return 1/(1+torch.exp(-4*(x-0.5)))
 
 def hard_sigmoid(x):
-    return (1+F.hardtanh(x-1))*0.5
+    return (1+F.hardtanh(2*x-1))*0.5
 
 def ctrd_hard_sig(x):
-    return (1+F.hardtanh(x))*0.5
+    return (F.hardtanh(2*x))*0.5
 
 def my_hard_sig(x):
     return 0.5*(my_sigmoid(x)+hard_sigmoid(x))
@@ -80,17 +80,23 @@ def make_pools(letters):
         elif letters[p]=='i':
             pools.append( torch.nn.Identity() )
     return pools
-               
-def my_init(m):
-    if isinstance(m, torch.nn.Linear):
-        torch.nn.init.kaiming_uniform_(m.weight)
-        if m.bias is not None:
-            torch.nn.init.zeros_(m.bias)
-    if isinstance(m, torch.nn.Conv2d):
-        torch.nn.init.kaiming_uniform_(m.weight) 
-        if m.bias is not None:
-            torch.nn.init.zeros_(m.bias)
         
+
+
+       
+def my_init(scale):
+    def my_scaled_init(m):
+        if isinstance(m, torch.nn.Conv2d):
+            torch.nn.init.kaiming_uniform_(m.weight)
+            m.weight.data.mul_(scale)
+            if m.bias is not None:
+                torch.nn.init.zeros_(m.bias)
+        if isinstance(m, torch.nn.Linear):
+            torch.nn.init.kaiming_uniform_(m.weight)
+            m.weight.data.mul_(scale)
+            if m.bias is not None:
+                torch.nn.init.zeros_(m.bias)
+    return my_scaled_init
 
 
 

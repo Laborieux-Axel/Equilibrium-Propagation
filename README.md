@@ -58,7 +58,7 @@ For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--
 |`task`|Choose the task.|`--task 'MNIST'`, `--task 'CIFAR10'`|
 |`data-aug`|Enable data augmentation for CIFAR10.|`--data-aug`|
 |`lr-decay`|Enable learning rate decay.|`--lr-decay`|
-|`gamma`|Division factor for lr decay.|`--gamma 0.1`|
+|`scale`|Multiplication factor for weight initialisation.|`--scale 0.2`|
 |`archi`|Layers dimension for MLP.|`--archi 784 512 10`|
 |`channels`|Feature maps for CNN.|`--channels 128 256 512`|
 |`pools`|Layers wise poolings. `m` is maxpool, `a` is avgpool and `i` is no pooling. All are kernel size 2 and stride 2.|`--pools 'mmm'` for 3 conv layers.|
