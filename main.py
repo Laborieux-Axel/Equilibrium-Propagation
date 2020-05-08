@@ -68,7 +68,7 @@ if args.save:
     date = datetime.now().strftime('%Y-%m-%d')
     time = datetime.now().strftime('%H-%M-%S')
     if args.load_path=='':
-        path = 'results/'+date+'/'+time+'_gpu'+str(args.device)
+        path = 'results/'+args.alg+'/'+date+'/'+time+'_gpu'+str(args.device)
     else:
         path = args.load_path
     if not(os.path.exists(path)):
@@ -218,7 +218,7 @@ if args.todo=='train':
 
     # Constructing the scheduler
     if args.lr_decay:
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30,60,90], gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[40,80,120], gamma=0.1)
     else:
         scheduler = None
 
