@@ -1091,7 +1091,8 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     RMSE(BPTT, EP)
     
         if scheduler is not None:
-            scheduler.step()
+            if epoch < scheduler.T_max:
+                scheduler.step()
 
         test_correct = evaluate(model, test_loader, T1, device)
         test_acc_t = test_correct/(len(test_loader.dataset))
@@ -1106,8 +1107,16 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 save_dic['scheduler'] = scheduler.state_dict() if scheduler is not None else None
                 torch.save(save_dic,  path + '/checkpoint.tar')
                 torch.save(model, path + '/model.pt')
-            plot_acc(train_acc, test_acc, path)        
-
+           plot_acc(train_acc, test_acc, path)        
+    
+    if save:
+        save_dic = {'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict(),
+                    'train_acc': train_acc, 'test_acc': test_acc, 
+                    'best': best, 'epoch': epochs}
+        save_dic['scheduler'] = scheduler.state_dict() if scheduler is not None else None
+        torch.save(save_dic,  path + '/final_checkpoint.tar')
+        torch.save(model, path + '/final_model.pt')
+ 
 
             
 def evaluate(model, loader, T, device):
