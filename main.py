@@ -11,6 +11,7 @@ import os
 from datetime import datetime
 import time
 import math
+import sys
 from model_utils import *
 from data_utils import *
 
@@ -53,8 +54,10 @@ parser.add_argument('--thirdphase', default = False, action = 'store_true', help
 parser.add_argument('--softmax', default = False, action = 'store_true', help='softmax loss with parameters (default: False)')
 
 args = parser.parse_args()
+command_line = ' '.join(sys.argv)
 
-
+print('\n')
+print(command_line)
 print('\n')
 print('##################################################################')
 print('\nargs\tmbs\tT1\tT2\tepochs\tactivation\tbetas')
@@ -235,7 +238,7 @@ if args.todo=='train':
     print(optimizer)
     print('\ntraining algorithm : ',args.alg, '\n')
     if args.save and args.load_path=='':
-        createHyperparametersFile(path, args, model)
+        createHyperparametersFile(path, args, model, command_line)
         
 
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, alg=args.alg, 
