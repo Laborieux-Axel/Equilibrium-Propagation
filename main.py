@@ -71,7 +71,7 @@ if args.save:
     date = datetime.now().strftime('%Y-%m-%d')
     time = datetime.now().strftime('%H-%M-%S')
     if args.load_path=='':
-        path = 'results/'+args.alg+'/'+date+'/'+time+'_gpu'+str(args.device)
+        path = 'results/'+args.alg+'/'+args.loss+'/'+date+'/'+time+'_gpu'+str(args.device)
     else:
         path = args.load_path
     if not(os.path.exists(path)):
@@ -258,8 +258,10 @@ elif args.todo=='gducheck':
         plot_gdu(BPTT, EP, path)
 
 
+elif args.todo=='evaluate':
 
-
-
+    training_acc = evaluate(model, train_loader, args.T1, device)
+    training_acc /= len(train_loader.dataset)
+    print('\nTrain accuracy :', training_acc, file=open(path+'/hyperparameters.txt', 'a'))
 
 
