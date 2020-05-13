@@ -32,37 +32,36 @@ def timeSince(since, percent):
 
         
 def plot_gdu(BPTT, EP, path):
-    N = len(EP.keys())
-    fig = plt.figure(figsize=(10,2*N))
-    for idx, key in enumerate(EP.keys()):
-        fig.add_subplot(N//2+1, 2, idx+1)
-        if len(EP[key].size())==3:
-            i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
-            ep = EP[key][:,i,j].cpu().detach().numpy().flatten()
-            bptt = BPTT[key][:,i,j].cpu().detach().numpy().flatten()
-            plt.plot(ep, label='ep')
-            plt.plot(bptt, label='bptt')
-            plt.title(key.replace('.','_'))
-            plt.legend()
-        elif len(EP[key].size())==2:
-            i = np.random.randint(EP[key].size(1))
-            ep = EP[key][:,i].cpu().detach().numpy().flatten()
-            bptt = BPTT[key][:,i].cpu().detach().numpy().flatten()
-            plt.plot(ep, label='ep')
-            plt.plot(bptt, label='bptt')
-            plt.title(key.replace('.','_'))
-            plt.legend()
-        elif len(EP[key].size())==5:
-            i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
-            k, l = np.random.randint(EP[key].size(3)), np.random.randint(EP[key].size(4))
-            ep = EP[key][:,i,j,k,l].cpu().detach().numpy().flatten()
-            bptt = BPTT[key][:,i,j,k,l].cpu().detach().numpy().flatten()
-            plt.plot(ep, label='ep')
-            plt.plot(bptt, label='bptt')
-            plt.title(key.replace('.','_'))
-            plt.legend()
-    fig.savefig(path + '/some_gdu_curves.png')
-    plt.close()        
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color']
+    for key in EP.keys():
+        fig = plt.figure(figsize=(16,9))
+        for idx in range(10):
+            if len(EP[key].size())==3:
+                i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
+                ep = EP[key][:,i,j].cpu().detach().numpy().flatten()
+                bptt = BPTT[key][:,i,j].cpu().detach().numpy().flatten()
+                plt.plot(ep, linestyle='--', color=colors[idx])
+                plt.plot(bptt, color=colors[idx])
+                plt.title(key.replace('.','_'))
+            elif len(EP[key].size())==2:
+                i = np.random.randint(EP[key].size(1))
+                ep = EP[key][:,i].cpu().detach().numpy().flatten()
+                bptt = BPTT[key][:,i].cpu().detach().numpy().flatten()
+                plt.plot(ep, linestyle='--', color=colors[idx])
+                plt.plot(bptt, color=colors[idx])
+                plt.title(key.replace('.','_'))
+            elif len(EP[key].size())==5:
+                i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
+                k, l = np.random.randint(EP[key].size(3)), np.random.randint(EP[key].size(4))
+                ep = EP[key][:,i,j,k,l].cpu().detach().numpy().flatten()
+                bptt = BPTT[key][:,i,j,k,l].cpu().detach().numpy().flatten()
+                plt.plot(ep, linestyle='--', color=colors[idx])
+                plt.plot(bptt, color=colors[idx])
+                plt.title(key.replace('.','_'))
+        plt.grid()
+        fig.savefig(path + '/'key.replace('.','_')+'.png')
+        plt.close()        
 
 
 
