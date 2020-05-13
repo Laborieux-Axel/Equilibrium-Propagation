@@ -60,7 +60,7 @@ def plot_gdu(BPTT, EP, path):
                 plt.plot(bptt, color=colors[idx])
                 plt.title(key.replace('.','_'))
         plt.grid()
-        fig.savefig(path + '/'key.replace('.','_')+'.png')
+        fig.savefig(path+'/'+key.replace('.','_')+'.png')
         plt.close()        
 
 
