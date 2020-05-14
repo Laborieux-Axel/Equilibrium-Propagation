@@ -654,6 +654,18 @@ class VF_CNN(torch.nn.Module):
                 self.B_syn.append(torch.nn.Linear(fc_layers[idx], fc_layers[idx+1], bias=False))
 
 
+    def angle(self):
+        with torch.no_grad():
+            for idx in range(len(self.B_syn)):
+                fnorm = self.synapses[idx+1].weight.data.pow(2).sum().pow(0.5).item()
+                bnorm = self.B_syn[idx].weight.data.pow(2).sum().pow(0.5).item()
+                cos = self.B_syn[idx].weight.data.mul(self.synapses[idx+1].weight.data).sum().div(fnorm*bnorm)
+                angle = torch.acos(cos).item()*(180/(math.pi))
+                angles.append(angle)
+                print('cosinus layer {}:'.format(idx+1), angle)
+        return angles
+
+
     def Phi(self, x, y, neurons, beta, criterion, neurons_2=None):
 
         mbs = x.size(0)       
