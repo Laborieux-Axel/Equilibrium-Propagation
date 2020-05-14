@@ -52,6 +52,7 @@ parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='dev
 parser.add_argument('--local', default = False, action = 'store_true', help='locally connected architectures (default: False)')
 parser.add_argument('--thirdphase', default = False, action = 'store_true', help='add third phase for higher order evaluation of the gradient (default: False)')
 parser.add_argument('--softmax', default = False, action = 'store_true', help='softmax loss with parameters (default: False)')
+parser.add_argument('--same-update', default = False, action = 'store_true', help='same update is applied for VFCNN back and forward')
 
 args = parser.parse_args()
 command_line = ' '.join(sys.argv)
@@ -171,7 +172,7 @@ if args.load_path=='':
                                   activation=activation, local=args.local, softmax=args.softmax)
             elif args.model=='VFCNN':
                 model = VF_CNN(28, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
-                                   activation=activation, softmax=args.softmax)
+                                   activation=activation, softmax=args.softmax, same_update=args.same_update)
 
         elif args.task=='CIFAR10':    
            pools = make_pools(args.pools)
@@ -181,7 +182,7 @@ if args.load_path=='':
                               activation=activation, local=args.local, softmax=args.softmax)
            elif args.model=='VFCNN':
                 model = VF_CNN(32, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
-                              activation=activation, softmax = args.softmax)
+                              activation=activation, softmax = args.softmax, same_update=args.same_update)
 
         print('\n')
         print('Poolings =', model.pools)

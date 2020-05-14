@@ -597,7 +597,7 @@ class P_CNN(torch.nn.Module):
 # Vector Field Convolutional Neural Network
 
 class VF_CNN(torch.nn.Module):
-    def __init__(self, in_size, channels, kernels, strides, fc, pools, paddings, activation=hard_sigmoid, softmax = False):
+    def __init__(self, in_size, channels, kernels, strides, fc, pools, paddings, activation=hard_sigmoid, softmax = False, same_update=False):
         super(VF_CNN, self).__init__()
 
         # Dimensions used to initialize neurons
@@ -614,6 +614,7 @@ class VF_CNN(torch.nn.Module):
         self.synapses = torch.nn.ModuleList()
         self.B_syn = torch.nn.ModuleList()
 
+        self.same_update = same_update
         self.softmax = softmax
 
         """
@@ -863,12 +864,17 @@ class VF_CNN(torch.nn.Module):
         else:
             phis_1 = self.Phi(x, y, neurons_1, beta_2, criterion)
         
-        phis_2 = self.Phi(x, y, neurons_1, beta_2, criterion, neurons_2=neurons_2)
-     
+        if self.same_update:
+            phis_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
+            factor = 0.5
+        else:
+            phis_2 = self.Phi(x, y, neurons_1, beta_2, criterion, neurons_2=neurons_2)
+            factor = 1.0            
+
         for idx in range(len(neurons_1)):
             phi_1 = phis_1[idx].mean()
             phi_2 = phis_2[idx].mean()
-            delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
+            delta_phi = factor*((phi_2 - phi_1)/(beta_1 - beta_2))        
             delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1)
  
        
