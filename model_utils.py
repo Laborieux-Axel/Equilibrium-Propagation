@@ -1109,7 +1109,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     RMSE(BPTT, EP)
     
         if scheduler is not None:
-            if epoch < scheduler.T_max:
+            if epoch+epoch_sofar < scheduler.T_max:
                 scheduler.step()
 
         test_correct = evaluate(model, test_loader, T1, device)
