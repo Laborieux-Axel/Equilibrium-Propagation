@@ -256,6 +256,8 @@ elif args.todo=='gducheck':
     BPTT, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, betas, criterion)
     RMSE(BPTT, EP)
     if args.save:
+        torch.save(BPTT, path+'/BPTT.pt')
+        torch.save(EP, path+'/EP.pt')
         plot_gdu(BPTT, EP, path)
 
 
