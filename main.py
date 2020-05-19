@@ -73,7 +73,7 @@ if args.save:
     date = datetime.now().strftime('%Y-%m-%d')
     time = datetime.now().strftime('%H-%M-%S')
     if args.load_path=='':
-        path = 'results/'+args.alg+'/'+args.loss+'/'+date+'/'+time+'_gpu'+str(args.device)
+        path = 'results/'+args.alg+'/dropout/'+args.loss+'/'+date+'/'+time+'_gpu'+str(args.device)
     else:
         path = args.load_path
     if not(os.path.exists(path)):
