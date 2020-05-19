@@ -87,15 +87,21 @@ def make_pools(letters):
 def my_init(scale):
     def my_scaled_init(m):
         if isinstance(m, torch.nn.Conv2d):
-            torch.nn.init.kaiming_uniform_(m.weight)
+            torch.nn.init.kaiming_uniform_(m.weight, math.sqrt(5))
             m.weight.data.mul_(scale)
             if m.bias is not None:
-                torch.nn.init.zeros_(m.bias)
+                fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(m.weight)
+                bound = 1 / math.sqrt(fan_in)
+                torch.nn.init.uniform_(m.bias, -bound, bound)
+                m.bias.data.mul_(scale)
         if isinstance(m, torch.nn.Linear):
-            torch.nn.init.kaiming_uniform_(m.weight)
+            torch.nn.init.kaiming_uniform_(m.weight, math.sqrt(5))
             m.weight.data.mul_(scale)
             if m.bias is not None:
-                torch.nn.init.zeros_(m.bias)
+                fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(m.weight)
+                bound = 1 / math.sqrt(fan_in)
+                torch.nn.init.uniform_(m.bias, -bound, bound)
+                m.bias.data.mul_(scale)
     return my_scaled_init
 
 
