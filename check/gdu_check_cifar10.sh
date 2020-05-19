@@ -1,0 +1,1 @@
+main.py --model 'CNN' --task 'CIFAR10' --act 'ctrd_hard_sig' --kernels 3 3 3 3 --channels 128 256 512 512 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --todo 'gducheck' --betas 0.0 0.4 --T1 250 --T2 30 --loss 'cel' --softmax --save --device 0

@@ -30,41 +30,38 @@ def timeSince(since, percent):
     rs = es - s
     return 'elapsed time : %s \t (will finish in %s)' % (asMinutes(s), asMinutes(rs))
 
-        
+
 def plot_gdu(BPTT, EP, path):
-    N = len(EP.keys())
-    fig = plt.figure(figsize=(10,2*N))
-    for idx, key in enumerate(EP.keys()):
-        fig.add_subplot(N//2+1, 2, idx+1)
-        if len(EP[key].size())==3:
-            i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
-            ep = EP[key][:,i,j].cpu().detach().numpy().flatten()
-            bptt = BPTT[key][:,i,j].cpu().detach().numpy().flatten()
-            plt.plot(ep, label='ep')
-            plt.plot(bptt, label='bptt')
-            plt.title(key.replace('.','_'))
-            plt.legend()
-        elif len(EP[key].size())==2:
-            i = np.random.randint(EP[key].size(1))
-            ep = EP[key][:,i].cpu().detach().numpy().flatten()
-            bptt = BPTT[key][:,i].cpu().detach().numpy().flatten()
-            plt.plot(ep, label='ep')
-            plt.plot(bptt, label='bptt')
-            plt.title(key.replace('.','_'))
-            plt.legend()
-        elif len(EP[key].size())==5:
-            i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
-            k, l = np.random.randint(EP[key].size(3)), np.random.randint(EP[key].size(4))
-            ep = EP[key][:,i,j,k,l].cpu().detach().numpy().flatten()
-            bptt = BPTT[key][:,i,j,k,l].cpu().detach().numpy().flatten()
-            plt.plot(ep, label='ep')
-            plt.plot(bptt, label='bptt')
-            plt.title(key.replace('.','_'))
-            plt.legend()
-    fig.savefig(path + '/some_gdu_curves.png')
-    plt.close()        
-
-
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color']
+    for key in EP.keys():
+        fig = plt.figure(figsize=(16,9))
+        for idx in range(10):
+            if len(EP[key].size())==3:
+                i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
+                ep = EP[key][:,i,j].cpu().detach().numpy().flatten()
+                bptt = BPTT[key][:,i,j].cpu().detach().numpy().flatten()
+                plt.plot(ep, linestyle='--', color=colors[idx], alpha=0.7)
+                plt.plot(bptt, color=colors[idx], alpha=0.7)
+                plt.title(key.replace('.','_'))
+            elif len(EP[key].size())==2:
+                i = np.random.randint(EP[key].size(1))
+                ep = EP[key][:,i].cpu().detach().numpy().flatten()
+                bptt = BPTT[key][:,i].cpu().detach().numpy().flatten()
+                plt.plot(ep, linestyle='--', color=colors[idx], alpha=0.7)
+                plt.plot(bptt, color=colors[idx], alpha=0.7)
+                plt.title(key.replace('.','_'))
+            elif len(EP[key].size())==5:
+                i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
+                k, l = np.random.randint(EP[key].size(3)), np.random.randint(EP[key].size(4))
+                ep = EP[key][:,i,j,k,l].cpu().detach().numpy().flatten()
+                bptt = BPTT[key][:,i,j,k,l].cpu().detach().numpy().flatten()
+                plt.plot(ep, linestyle='--', color=colors[idx], alpha=0.7)
+                plt.plot(bptt, color=colors[idx], alpha=0.7)
+                plt.title(key.replace('.','_'))
+        plt.grid()
+        fig.savefig(path+'/'+key.replace('.','_')+'.png', dpi=300)
+        plt.close()
 
 
 
@@ -78,7 +75,7 @@ def plot_neural_activity(neurons, path):
         plt.hist(nrn, 50)
         #plt.xlim((-1.1,1.1))
         plt.title('neurons of layer '+str(idx+1))
-    fig.savefig(path)
+    fig.savefig(path + '/neural_activity.png')
     plt.close()
 
 
@@ -114,14 +111,14 @@ def plot_acc(train_acc, test_acc, path):
  
 
 
-def createHyperparametersFile(path, args, model):
-
+def createHyperparametersFile(path, args, model, command_line):
+    
     hyperparameters = open(path + r"/hyperparameters.txt","w+")
     L = ["- task: {}".format(args.task) + "\n",
         "- data augmentation (if CIFAR10): {}".format(args.data_aug) + "\n",
         "- learning rate decay: {}".format(args.lr_decay) + "\n",
         "- layer wise dropout probabilities: {}".format(args.dropouts) + "\n",
-        "- gamma for lr decay: {}".format(args.gamma) + "\n",
+        "- scale for weight init: {}".format(args.scale) + "\n",
         "- activation: {}".format(args.act) + "\n",
         "- learning rates: {}".format(args.lrs) + "\n",
         "- weight decays: {}".format(args.wds) + "\n",
@@ -136,10 +133,12 @@ def createHyperparametersFile(path, args, model):
         "- random beta_2 sign: {}".format(args.random_sign) + "\n", 
         "- thirdphase: {}".format(args.thirdphase) + "\n", 
         "- softmax: {}".format(args.softmax) + "\n", 
+        "- same update VFCNN: {}".format(args.same_update) + "\n", 
         "- epochs: {}".format(args.epochs) + "\n", 
         "- seed: {}".format(args.seed) + "\n", 
         "- device: {}".format(args.device) + "\n"]
-   
+
+    print(command_line, '\n', file=hyperparameters)   
     hyperparameters.writelines(L)
     print('\nPoolings :', model.pools, '\n', file=hyperparameters)
     print(model, file=hyperparameters)

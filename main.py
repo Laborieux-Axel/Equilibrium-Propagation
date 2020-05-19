@@ -11,6 +11,7 @@ import os
 from datetime import datetime
 import time
 import math
+import sys
 from model_utils import *
 from data_utils import *
 
@@ -43,7 +44,7 @@ parser.add_argument('--check-thm', default = False, action = 'store_true', help=
 parser.add_argument('--random-sign', default = False, action = 'store_true', help='randomly switch beta_2 sign')
 parser.add_argument('--data-aug', default = False, action = 'store_true', help='enabling data augmentation for cifar10')
 parser.add_argument('--lr-decay', default = False, action = 'store_true', help='enabling learning rate decay')
-parser.add_argument('--gamma',type = float, default = 0.1, metavar = 'g', help='division factor for lr scheduler')
+parser.add_argument('--scale',type = float, default = None, metavar = 'g', help='scal factor for weight init')
 parser.add_argument('--save', default = False, action = 'store_true', help='saving results')
 parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', help='training or plot gdu curves')
 parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
@@ -52,10 +53,13 @@ parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='dev
 parser.add_argument('--local', default = False, action = 'store_true', help='locally connected architectures (default: False)')
 parser.add_argument('--thirdphase', default = False, action = 'store_true', help='add third phase for higher order evaluation of the gradient (default: False)')
 parser.add_argument('--softmax', default = False, action = 'store_true', help='softmax loss with parameters (default: False)')
+parser.add_argument('--same-update', default = False, action = 'store_true', help='same update is applied for VFCNN back and forward')
 
 args = parser.parse_args()
+command_line = ' '.join(sys.argv)
 
-
+print('\n')
+print(command_line)
 print('\n')
 print('##################################################################')
 print('\nargs\tmbs\tT1\tT2\tepochs\tactivation\tbetas')
@@ -69,7 +73,7 @@ if args.save:
     date = datetime.now().strftime('%Y-%m-%d')
     time = datetime.now().strftime('%H-%M-%S')
     if args.load_path=='':
-        path = 'results/'+date+'/'+time+'_gpu'+str(args.device)
+        path = 'results/'+args.alg+'/'+args.loss+'/'+date+'/'+time+'_gpu'+str(args.device)
     else:
         path = args.load_path
     if not(os.path.exists(path)):
@@ -169,7 +173,7 @@ if args.load_path=='':
                                   activation=activation, local=args.local, softmax=args.softmax)
             elif args.model=='VFCNN':
                 model = VF_CNN(28, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
-                                   activation=activation, softmax=args.softmax)
+                                   activation=activation, softmax=args.softmax, same_update=args.same_update)
 
         elif args.task=='CIFAR10':    
            pools = make_pools(args.pools)
@@ -179,11 +183,12 @@ if args.load_path=='':
                               activation=activation, local=args.local, softmax=args.softmax)
            elif args.model=='VFCNN':
                 model = VF_CNN(32, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
-                              activation=activation, softmax = args.softmax)
+                              activation=activation, softmax = args.softmax, same_update=args.same_update)
 
         print('\n')
         print('Poolings =', model.pools)
-    #model.apply(my_init)
+    if args.scale is not None:
+        model.apply(my_init(args.scale))
 else:
     model = torch.load(args.load_path + '/model.pt')
 
@@ -218,7 +223,8 @@ if args.todo=='train':
 
     # Constructing the scheduler
     if args.lr_decay:
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[50,100,150], gamma=args.gamma)
+        #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[40,80,120], gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, 100, eta_min=1e-5)
     else:
         scheduler = None
 
@@ -234,7 +240,7 @@ if args.todo=='train':
     print(optimizer)
     print('\ntraining algorithm : ',args.alg, '\n')
     if args.save and args.load_path=='':
-        createHyperparametersFile(path, args, model)
+        createHyperparametersFile(path, args, model, command_line)
         
 
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, alg=args.alg, 
@@ -249,14 +255,23 @@ elif args.todo=='gducheck':
     images, labels = images.to(device), labels.to(device)
 
     BPTT, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, betas, criterion)
+    if args.thirdphase:
+        beta_1, beta_2 = args.betas
+        _, EP_2 = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, (beta_1, -beta_2), criterion)
+
     RMSE(BPTT, EP)
     if args.save:
+        torch.save(BPTT, path+'/BPTT.pt')
+        torch.save(EP, path+'/EP.pt')
+        if args.thirdphase:
+            torch.save(EP_2, path+'/EP_2.pt')
         plot_gdu(BPTT, EP, path)
 
 
+elif args.todo=='evaluate':
 
-
-
-
+    training_acc = evaluate(model, train_loader, args.T1, device)
+    training_acc /= len(train_loader.dataset)
+    print('\nTrain accuracy :', training_acc, file=open(path+'/hyperparameters.txt', 'a'))
 
 

@@ -22,13 +22,13 @@ def my_sigmoid(x):
     return 1/(1+torch.exp(-4*(x-0.5)))
 
 def hard_sigmoid(x):
-    return (1+F.hardtanh(x-1))*0.5
+    return (1+F.hardtanh(2*x-1))*0.5
 
 def ctrd_hard_sig(x):
-    return (1+F.hardtanh(x))*0.5
+    return (F.hardtanh(2*x))*0.5
 
 def my_hard_sig(x):
-    return 0.5*(my_sigmoid(x)+hard_sigmoid(x))
+    return (1+F.hardtanh(x-1))*0.5
 
 
 
@@ -80,17 +80,29 @@ def make_pools(letters):
         elif letters[p]=='i':
             pools.append( torch.nn.Identity() )
     return pools
-               
-def my_init(m):
-    if isinstance(m, torch.nn.Linear):
-        torch.nn.init.kaiming_uniform_(m.weight)
-        if m.bias is not None:
-            torch.nn.init.zeros_(m.bias)
-    if isinstance(m, torch.nn.Conv2d):
-        torch.nn.init.kaiming_uniform_(m.weight) 
-        if m.bias is not None:
-            torch.nn.init.zeros_(m.bias)
         
+
+
+       
+def my_init(scale):
+    def my_scaled_init(m):
+        if isinstance(m, torch.nn.Conv2d):
+            torch.nn.init.kaiming_uniform_(m.weight, math.sqrt(5))
+            m.weight.data.mul_(scale)
+            if m.bias is not None:
+                fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(m.weight)
+                bound = 1 / math.sqrt(fan_in)
+                torch.nn.init.uniform_(m.bias, -bound, bound)
+                m.bias.data.mul_(scale)
+        if isinstance(m, torch.nn.Linear):
+            torch.nn.init.kaiming_uniform_(m.weight, math.sqrt(5))
+            m.weight.data.mul_(scale)
+            if m.bias is not None:
+                fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(m.weight)
+                bound = 1 / math.sqrt(fan_in)
+                torch.nn.init.uniform_(m.bias, -bound, bound)
+                m.bias.data.mul_(scale)
+    return my_scaled_init
 
 
 
@@ -213,28 +225,48 @@ class VF_MLP(torch.nn.Module):
             self.B_syn.append(torch.nn.Linear(archi[idx+1], archi[idx], bias=False))
 
 
-    def Phi(self, x, y, neurons, beta, criterion):
+    def Phi(self, x, y, neurons, beta, criterion, neurons_2=None):
         
         x = x.view(x.size(0),-1)
         
         layers = [x] + neurons
         
         phis = []
-        for idx in range(len(self.synapses)-1):
-            phi = torch.sum( self.synapses[idx](layers[idx]) * layers[idx+1], dim=1).squeeze()
-            phi += torch.sum( self.B_syn[idx](layers[idx+2]) * layers[idx+1], dim=1).squeeze()
-            phis.append(phi)        
 
-        phi = torch.sum( self.synapses[-1](layers[-2]) * layers[-1], dim=1).squeeze()
-        if beta!=0.0:
-            if criterion.__class__.__name__.find('MSE')!=-1:
-                y = F.one_hot(y, num_classes=10)
-                L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
-            else:
-                L = criterion(layers[-1].float(), y).squeeze()     
-            phi -= beta*L
+        if neurons_2 is None:
+            for idx in range(len(self.synapses)-1):
+                phi = torch.sum( self.synapses[idx](layers[idx]) * layers[idx+1], dim=1).squeeze()
+                phi += torch.sum( self.B_syn[idx](layers[idx+2]) * layers[idx+1], dim=1).squeeze()
+                phis.append(phi)        
+
+            phi = torch.sum( self.synapses[-1](layers[-2]) * layers[-1], dim=1).squeeze()
+            if beta!=0.0:
+                if criterion.__class__.__name__.find('MSE')!=-1:
+                    y = F.one_hot(y, num_classes=10)
+                    L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
+                else:
+                    L = criterion(layers[-1].float(), y).squeeze()     
+                phi -= beta*L
         
-        phis.append(phi)
+            phis.append(phi)
+        
+        else:
+            layers_2 = [x] + neurons_2
+            for idx in range(len(self.synapses)-1):
+                phi = torch.sum( self.synapses[idx](layers[idx]) * layers_2[idx+1], dim=1).squeeze()
+                phi += torch.sum( self.B_syn[idx](layers[idx+2]) * layers_2[idx+1], dim=1).squeeze()
+                phis.append(phi)        
+
+            phi = torch.sum( self.synapses[-1](layers[-2]) * layers_2[-1], dim=1).squeeze()
+            if beta!=0.0:
+                if criterion.__class__.__name__.find('MSE')!=-1:
+                    y = F.one_hot(y, num_classes=10)
+                    L = 0.5*criterion(layers_2[-1].float(), y.float()).sum(dim=1).squeeze()   
+                else:
+                    L = criterion(layers_2[-1].float(), y).squeeze()     
+                phi -= beta*L
+        
+            phis.append(phi)
 
         return phis
     
@@ -291,7 +323,7 @@ class VF_MLP(torch.nn.Module):
         else:
             phis_1 = self.Phi(x, y, neurons_1, beta_2, criterion)
         
-        phis_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
+        phis_2 = self.Phi(x, y, neurons_1, beta_2, criterion, neurons_2=neurons_2)
      
         for idx in range(len(neurons_1)):
             phi_1 = phis_1[idx].mean()
@@ -585,7 +617,7 @@ class P_CNN(torch.nn.Module):
 # Vector Field Convolutional Neural Network
 
 class VF_CNN(torch.nn.Module):
-    def __init__(self, in_size, channels, kernels, strides, fc, pools, paddings, activation=hard_sigmoid, softmax = False):
+    def __init__(self, in_size, channels, kernels, strides, fc, pools, paddings, activation=hard_sigmoid, softmax = False, same_update=False):
         super(VF_CNN, self).__init__()
 
         # Dimensions used to initialize neurons
@@ -602,6 +634,7 @@ class VF_CNN(torch.nn.Module):
         self.synapses = torch.nn.ModuleList()
         self.B_syn = torch.nn.ModuleList()
 
+        self.same_update = same_update
         self.softmax = softmax
 
         """
@@ -641,7 +674,19 @@ class VF_CNN(torch.nn.Module):
                 self.B_syn.append(torch.nn.Linear(fc_layers[idx], fc_layers[idx+1], bias=False))
 
 
-    def Phi(self, x, y, neurons, beta, criterion):
+    def angle(self):
+        with torch.no_grad():
+            for idx in range(len(self.B_syn)):
+                fnorm = self.synapses[idx+1].weight.data.pow(2).sum().pow(0.5).item()
+                bnorm = self.B_syn[idx].weight.data.pow(2).sum().pow(0.5).item()
+                cos = self.B_syn[idx].weight.data.mul(self.synapses[idx+1].weight.data).sum().div(fnorm*bnorm)
+                angle = torch.acos(cos).item()*(180/(math.pi))
+                angles.append(angle)
+                print('cosinus layer {}:'.format(idx+1), angle)
+        return angles
+
+
+    def Phi(self, x, y, neurons, beta, criterion, neurons_2=None):
 
         mbs = x.size(0)       
         conv_len = len(self.kernels)
@@ -651,56 +696,124 @@ class VF_CNN(torch.nn.Module):
         layers = [x] + neurons        
         phis = []
 
-        #Phi computation changes depending on softmax == True or not
-        if not self.softmax:
+        if neurons_2 is None:
+            #Phi computation changes depending on softmax == True or not
+            if not self.softmax:
 
-            for idx in range(conv_len-1):    
-                phi = torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1], dim=(1,2,3)).squeeze()     
-                phi += torch.sum( self.pools[idx+1](self.B_syn[idx](layers[idx+1])) * layers[idx+2], dim=(1,2,3)).squeeze()
-                phis.append(phi)
+                for idx in range(conv_len-1):    
+                    phi = torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1], dim=(1,2,3)).squeeze()     
+                    phi += torch.sum( self.pools[idx+1](self.B_syn[idx](layers[idx+1])) * layers[idx+2], dim=(1,2,3)).squeeze()
+                    phis.append(phi)
 
-            phi = torch.sum( self.pools[conv_len-1](self.synapses[conv_len-1](layers[conv_len-1])) * layers[conv_len], dim=(1,2,3)).squeeze()
-            phi += torch.sum( self.B_syn[conv_len-1](layers[conv_len].view(mbs,-1)) * layers[conv_len+1], dim=1).squeeze()            
-            phis.append(phi)            
-
-            for idx in range(conv_len+1, tot_len-1):
-                phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
-                phi += torch.sum( self.B_syn[idx](layers[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
-                phis.append(phi)
-
-            phi = torch.sum( self.synapses[-1](layers[-2].view(mbs,-1)) * layers[-1], dim=1).squeeze()
-            if beta!=0.0:
-                if criterion.__class__.__name__.find('MSE')!=-1:
-                    y = F.one_hot(y, num_classes=10)
-                    L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
-                else:
-                    L = criterion(layers[-1].float(), y).squeeze()             
-                phi -= beta*L
-            phis.append(phi)
-
-        else:
-            #WATCH OUT: the output layer used for the prediction is no longer part of the system ! Summing until len(self.synapses) - 1 only
-            for idx in range(conv_len-1):    
-                phi = torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1], dim=(1,2,3)).squeeze()     
-                phi += torch.sum( self.pools[idx+1](self.B_syn[idx](layers[idx+1])) * layers[idx+2], dim=(1,2,3)).squeeze()
-                phis.append(phi)
-            
-            phi = torch.sum( self.pools[conv_len-1](self.synapses[conv_len-1](layers[conv_len-1])) * layers[conv_len], dim=(1,2,3)).squeeze()
-            if bck_len>=conv_len:
+                phi = torch.sum( self.pools[conv_len-1](self.synapses[conv_len-1](layers[conv_len-1])) * layers[conv_len], dim=(1,2,3)).squeeze()
                 phi += torch.sum( self.B_syn[conv_len-1](layers[conv_len].view(mbs,-1)) * layers[conv_len+1], dim=1).squeeze()            
                 phis.append(phi)            
 
-            for idx in range(conv_len+1, tot_len-2):
-                phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
-                phi += torch.sum( self.B_syn[idx](layers[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
+                for idx in range(conv_len+1, tot_len-1):
+                    phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
+                    phi += torch.sum( self.B_syn[idx](layers[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
+                    phis.append(phi)
+
+                phi = torch.sum( self.synapses[-1](layers[-2].view(mbs,-1)) * layers[-1], dim=1).squeeze()
+                if beta!=0.0:
+                    if criterion.__class__.__name__.find('MSE')!=-1:
+                        y = F.one_hot(y, num_classes=10)
+                        L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
+                    else:
+                        L = criterion(layers[-1].float(), y).squeeze()             
+                    phi -= beta*L
                 phis.append(phi)
 
-            #WATCH OUT: the prediction is made with softmax[last weights[penultimate layer]]
-            if beta!=0.0:
-                L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).float(), y).squeeze()             
-                phi -= beta*L            
-            phis.append(phi)           
-        
+            else:
+                #the output layer used for the prediction is no longer part of the system ! Summing until len(self.synapses) - 1 only
+                for idx in range(conv_len-1):    
+                    phi = torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers[idx+1], dim=(1,2,3)).squeeze()     
+                    phi += torch.sum( self.pools[idx+1](self.B_syn[idx](layers[idx+1])) * layers[idx+2], dim=(1,2,3)).squeeze()
+                    phis.append(phi)
+            
+                phi = torch.sum( self.pools[conv_len-1](self.synapses[conv_len-1](layers[conv_len-1])) * layers[conv_len], dim=(1,2,3)).squeeze()
+                if bck_len>=conv_len:
+                    phi += torch.sum( self.B_syn[conv_len-1](layers[conv_len].view(mbs,-1)) * layers[conv_len+1], dim=1).squeeze()            
+                    phis.append(phi)            
+
+                    for idx in range(conv_len, tot_len-2):
+                        phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers[idx+1], dim=1).squeeze()
+                        phi += torch.sum( self.B_syn[idx](layers[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
+                        phis.append(phi)
+                    
+                    phi = torch.sum( self.synapses[-2](layers[-2].view(mbs,-1)) * layers[-1], dim=1).squeeze()
+                    if beta!=0.0:
+                        L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).float(), y).squeeze()             
+                        phi -= beta*L
+                    phis.append(phi)                    
+
+                #the prediction is made with softmax[last weights[penultimate layer]]
+                elif beta!=0.0:
+                    L = criterion(self.synapses[-1](layers[-1].view(mbs,-1)).float(), y).squeeze()             
+                    phi -= beta*L
+                    phis.append(phi)            
+                else:
+                    phis.append(phi)
+           
+        else:
+            layers_2 = [x] + neurons_2
+            #Phi computation changes depending on softmax == True or not
+            if not self.softmax:
+
+                for idx in range(conv_len-1):    
+                    phi = torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers_2[idx+1], dim=(1,2,3)).squeeze()     
+                    phi += torch.sum( self.pools[idx+1](self.B_syn[idx](layers_2[idx+1])) * layers[idx+2], dim=(1,2,3)).squeeze()
+                    phis.append(phi)
+
+                phi = torch.sum( self.pools[conv_len-1](self.synapses[conv_len-1](layers[conv_len-1])) * layers_2[conv_len], dim=(1,2,3)).squeeze()
+                phi += torch.sum( self.B_syn[conv_len-1](layers_2[conv_len].view(mbs,-1)) * layers[conv_len+1], dim=1).squeeze()            
+                phis.append(phi)            
+
+                for idx in range(conv_len+1, tot_len-1):
+                    phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers_2[idx+1], dim=1).squeeze()
+                    phi += torch.sum( self.B_syn[idx](layers_2[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
+                    phis.append(phi)
+
+                phi = torch.sum( self.synapses[-1](layers[-2].view(mbs,-1)) * layers_2[-1], dim=1).squeeze()
+                if beta!=0.0:
+                    if criterion.__class__.__name__.find('MSE')!=-1:
+                        y = F.one_hot(y, num_classes=10)
+                        L = 0.5*criterion(layers_2[-1].float(), y.float()).sum(dim=1).squeeze()   
+                    else:
+                        L = criterion(layers_2[-1].float(), y).squeeze()             
+                    phi -= beta*L
+                phis.append(phi)
+
+            else:
+                #the output layer used for the prediction is no longer part of the system ! Summing until len(self.synapses) - 1 only
+                for idx in range(conv_len-1):    
+                    phi = torch.sum( self.pools[idx](self.synapses[idx](layers[idx])) * layers_2[idx+1], dim=(1,2,3)).squeeze()     
+                    phi += torch.sum( self.pools[idx+1](self.B_syn[idx](layers_2[idx+1])) * layers[idx+2], dim=(1,2,3)).squeeze()
+                    phis.append(phi)
+            
+                phi = torch.sum( self.pools[conv_len-1](self.synapses[conv_len-1](layers[conv_len-1])) * layers_2[conv_len], dim=(1,2,3)).squeeze()
+                if bck_len>=conv_len:
+                    phi += torch.sum( self.B_syn[conv_len-1](layers_2[conv_len].view(mbs,-1)) * layers[conv_len+1], dim=1).squeeze() 
+                    phis.append(phi)            
+
+                    for idx in range(conv_len, tot_len-2):
+                        phi = torch.sum( self.synapses[idx](layers[idx].view(mbs,-1)) * layers_2[idx+1], dim=1).squeeze()
+                        phi += torch.sum( self.B_syn[idx](layers_2[idx+1].view(mbs,-1)) * layers[idx+2], dim=1).squeeze()             
+                        phis.append(phi)
+                     
+                    phi = torch.sum( self.synapses[-2](layers[-2].view(mbs,-1)) * layers_2[-1], dim=1).squeeze()
+                    if beta!=0.0:
+                        L = criterion(self.synapses[-1](layers_2[-1].view(mbs,-1)).float(), y).squeeze()             
+                        phi -= beta*L
+                    phis.append(phi)                    
+
+                #the prediction is made with softmax[last weights[penultimate layer]]
+                elif beta!=0.0:
+                    L = criterion(self.synapses[-1](layers_2[-1].view(mbs,-1)).float(), y).squeeze()             
+                    phi -= beta*L                       
+                    phis.append(phi)
+                else:
+                    phis.append(phi)
         return phis
     
 
@@ -783,12 +896,17 @@ class VF_CNN(torch.nn.Module):
         else:
             phis_1 = self.Phi(x, y, neurons_1, beta_2, criterion)
         
-        phis_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
-     
+        if self.same_update:
+            phis_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
+            factor = 0.5
+        else:
+            phis_2 = self.Phi(x, y, neurons_1, beta_2, criterion, neurons_2=neurons_2)
+            factor = 1.0            
+
         for idx in range(len(neurons_1)):
             phi_1 = phis_1[idx].mean()
             phi_2 = phis_2[idx].mean()
-            delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
+            delta_phi = factor*((phi_2 - phi_1)/(beta_1 - beta_2))        
             delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1)
  
        
@@ -959,7 +1077,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 run_correct += (y == pred).sum().item()
                 run_total += x.size(0)
                 if ((idx%(iter_per_epochs//10)==0) or (idx==iter_per_epochs-1)) and save:
-                    plot_neural_activity(neurons, path+'/neural_activity.png')
+                    plot_neural_activity(neurons, path)
             
             if alg=='EP':
                 # Second phase
@@ -1011,7 +1129,8 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     RMSE(BPTT, EP)
     
         if scheduler is not None:
-            scheduler.step()
+            if epoch+epoch_sofar < scheduler.T_max:
+                scheduler.step()
 
         test_correct = evaluate(model, test_loader, T1, device)
         test_acc_t = test_correct/(len(test_loader.dataset))
@@ -1027,7 +1146,15 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 torch.save(save_dic,  path + '/checkpoint.tar')
                 torch.save(model, path + '/model.pt')
             plot_acc(train_acc, test_acc, path)        
-
+    
+    if save:
+        save_dic = {'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict(),
+                    'train_acc': train_acc, 'test_acc': test_acc, 
+                    'best': best, 'epoch': epochs}
+        save_dic['scheduler'] = scheduler.state_dict() if scheduler is not None else None
+        torch.save(save_dic,  path + '/final_checkpoint.tar')
+        torch.save(model, path + '/final_model.pt')
+ 
 
             
 def evaluate(model, loader, T, device):
