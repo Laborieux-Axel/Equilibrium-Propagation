@@ -1129,17 +1129,15 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
         if save:
             test_acc.append(100*test_acc_t)
             train_acc.append(100*run_acc)
+            if isinstance(model, VF_CNN):
+                angle = model.angle()
+                angles.append(angle)
             if test_correct > best:
                 best = test_correct
                 save_dic = {'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict(),
                             'train_acc': train_acc, 'test_acc': test_acc, 
                             'best': best, 'epoch': epoch_sofar+epoch+1}
-                if isinstance(model, VF_CNN):
-                    angle = model.angle()
-                    angles.append(angle)
-                    save_dic['angles'] = angles
-                else:
-                    save_dic['angles'] = []
+                save_dic['angles'] = angles
                 save_dic['scheduler'] = scheduler.state_dict() if scheduler is not None else None
                 torch.save(save_dic,  path + '/checkpoint.tar')
                 torch.save(model, path + '/model.pt')
