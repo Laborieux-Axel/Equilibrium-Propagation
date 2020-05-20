@@ -87,15 +87,21 @@ def make_pools(letters):
 def my_init(scale):
     def my_scaled_init(m):
         if isinstance(m, torch.nn.Conv2d):
-            torch.nn.init.kaiming_uniform_(m.weight)
+            torch.nn.init.kaiming_uniform_(m.weight, math.sqrt(5))
             m.weight.data.mul_(scale)
             if m.bias is not None:
-                torch.nn.init.zeros_(m.bias)
+                fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(m.weight)
+                bound = 1 / math.sqrt(fan_in)
+                torch.nn.init.uniform_(m.bias, -bound, bound)
+                m.bias.data.mul_(scale)
         if isinstance(m, torch.nn.Linear):
-            torch.nn.init.kaiming_uniform_(m.weight)
+            torch.nn.init.kaiming_uniform_(m.weight, math.sqrt(5))
             m.weight.data.mul_(scale)
             if m.bias is not None:
-                torch.nn.init.zeros_(m.bias)
+                fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(m.weight)
+                bound = 1 / math.sqrt(fan_in)
+                torch.nn.init.uniform_(m.bias, -bound, bound)
+                m.bias.data.mul_(scale)
     return my_scaled_init
 
 
@@ -666,6 +672,18 @@ class VF_CNN(torch.nn.Module):
                 angle = torch.acos(cos).item()*(180/(math.pi))
                 angles.append(angle)                
         return angles
+
+    def angle(self):
+        with torch.no_grad():
+            for idx in range(len(self.B_syn)):
+                fnorm = self.synapses[idx+1].weight.data.pow(2).sum().pow(0.5).item()
+                bnorm = self.B_syn[idx].weight.data.pow(2).sum().pow(0.5).item()
+                cos = self.B_syn[idx].weight.data.mul(self.synapses[idx+1].weight.data).sum().div(fnorm*bnorm)
+                angle = torch.acos(cos).item()*(180/(math.pi))
+                angles.append(angle)
+                print('cosinus layer {}:'.format(idx+1), angle)
+        return angles
+
 
     def Phi(self, x, y, neurons, beta, criterion, neurons_2=None):
 
