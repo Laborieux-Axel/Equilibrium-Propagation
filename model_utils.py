@@ -653,6 +653,19 @@ class VF_CNN(torch.nn.Module):
             if not(self.softmax and (idx==(len(fc)-1))):
                 self.B_syn.append(torch.nn.Linear(fc_layers[idx], fc_layers[idx+1], bias=False))
 
+        #for idx in range(len(self.B_syn)):
+        #    self.B_syn[idx].weight.data.copy_(self.synapses[idx+1].weight.data)
+
+    def angle(self):
+        angles = []
+        with torch.no_grad():
+            for idx in range(len(self.B_syn)):
+                fnorm = self.synapses[idx+1].weight.data.pow(2).sum().pow(0.5).item()
+                bnorm = self.B_syn[idx].weight.data.pow(2).sum().pow(0.5).item()
+                cos = self.B_syn[idx].weight.data.mul(self.synapses[idx+1].weight.data).sum().div(fnorm*bnorm)
+                angle = torch.acos(cos).item()*(180/(math.pi))
+                angles.append(angle)                
+        return angles
 
     def Phi(self, x, y, neurons, beta, criterion, neurons_2=None):
 
@@ -866,17 +879,19 @@ class VF_CNN(torch.nn.Module):
         
         if self.same_update:
             phis_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
-            factor = 0.5
         else:
             phis_2 = self.Phi(x, y, neurons_1, beta_2, criterion, neurons_2=neurons_2)
-            factor = 1.0            
 
         for idx in range(len(neurons_1)):
             phi_1 = phis_1[idx].mean()
             phi_2 = phis_2[idx].mean()
-            delta_phi = factor*((phi_2 - phi_1)/(beta_1 - beta_2))        
+            delta_phi = ((phi_2 - phi_1)/(beta_1 - beta_2))        
             delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1)
- 
+        with torch.no_grad():
+            for idx in range(len(self.B_syn)):
+                common_update = 0.5*(self.B_syn[idx].weight.grad.data + self.synapses[idx+1].weight.grad.data)
+                self.B_syn[idx].weight.grad.data.copy_(common_update)
+                self.synapses[idx+1].weight.grad.data.copy_(common_update)
        
 
          
@@ -1004,11 +1019,13 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
         test_acc = [10.0]
         best = 0.0
         epoch_sofar = 0
+        angles = [90.0]
     else:
         train_acc = checkpoint['train_acc']
         test_acc = checkpoint['test_acc']    
         best = checkpoint['best']
         epoch_sofar = checkpoint['epoch']
+        angles = checkpoint['angles'] if 'angles' in checkpoint.keys() else []
 
     for epoch in range(epochs):
         run_correct = 0
@@ -1091,13 +1108,15 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 print('Epoch :', round(epoch_sofar+epoch+(idx/iter_per_epochs), 2),
                       '\tRun train acc :', round(run_acc,3),'\t('+str(run_correct)+'/'+str(run_total)+')\t',
                       timeSince(start, ((idx+1)+epoch*iter_per_epochs)/(epochs*iter_per_epochs)))
-                
+                if isinstance(model, VF_CNN):
+                    angle = model.angle()
+                    print('angles ',angle)
                 if check_thm and alg=='EP':
                     BPTT, EP = check_gdu(model, x[0:5,:], y[0:5], T1, T2, betas, criterion)
                     RMSE(BPTT, EP)
     
         if scheduler is not None:
-            if epoch < scheduler.T_max:
+            if epoch+epoch_sofar < scheduler.T_max:
                 scheduler.step()
 
         test_correct = evaluate(model, test_loader, T1, device)
@@ -1110,6 +1129,12 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 save_dic = {'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict(),
                             'train_acc': train_acc, 'test_acc': test_acc, 
                             'best': best, 'epoch': epoch_sofar+epoch+1}
+                if isinstance(model, VF_CNN):
+                    angle = model.angle()
+                    angles.append(angle)
+                    save_dic['angles'] = angles
+                else:
+                    save_dic['angles'] = []
                 save_dic['scheduler'] = scheduler.state_dict() if scheduler is not None else None
                 torch.save(save_dic,  path + '/checkpoint.tar')
                 torch.save(model, path + '/model.pt')
