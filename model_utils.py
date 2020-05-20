@@ -659,8 +659,6 @@ class VF_CNN(torch.nn.Module):
             if not(self.softmax and (idx==(len(fc)-1))):
                 self.B_syn.append(torch.nn.Linear(fc_layers[idx], fc_layers[idx+1], bias=False))
 
-        #for idx in range(len(self.B_syn)):
-        #    self.B_syn[idx].weight.data.copy_(self.synapses[idx+1].weight.data)
 
     def angle(self):
         angles = []
@@ -671,17 +669,6 @@ class VF_CNN(torch.nn.Module):
                 cos = self.B_syn[idx].weight.data.mul(self.synapses[idx+1].weight.data).sum().div(fnorm*bnorm)
                 angle = torch.acos(cos).item()*(180/(math.pi))
                 angles.append(angle)                
-        return angles
-
-    def angle(self):
-        with torch.no_grad():
-            for idx in range(len(self.B_syn)):
-                fnorm = self.synapses[idx+1].weight.data.pow(2).sum().pow(0.5).item()
-                bnorm = self.B_syn[idx].weight.data.pow(2).sum().pow(0.5).item()
-                cos = self.B_syn[idx].weight.data.mul(self.synapses[idx+1].weight.data).sum().div(fnorm*bnorm)
-                angle = torch.acos(cos).item()*(180/(math.pi))
-                angles.append(angle)
-                print('cosinus layer {}:'.format(idx+1), angle)
         return angles
 
 
