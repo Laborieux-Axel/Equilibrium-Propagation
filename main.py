@@ -255,17 +255,23 @@ elif args.todo=='gducheck':
     images, labels = images.to(device), labels.to(device)
 
     BPTT, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, betas, criterion)
-    if args.thirdphase:
-        beta_1, beta_2 = args.betas
-        _, EP_2 = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, (beta_1, -beta_2), criterion)
-
     RMSE(BPTT, EP)
     if args.save:
         torch.save(BPTT, path+'/BPTT.pt')
         torch.save(EP, path+'/EP.pt')
-        if args.thirdphase:
-            torch.save(EP_2, path+'/EP_2.pt')
         plot_gdu(BPTT, EP, path)
+        if args.thirdphase:
+            beta_1, beta_2 = args.betas
+            _, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, (beta_1, -beta_2), criterion)
+            torch.save(EP, path+'/EP_2.pt')
+        if args.fivephase:
+            beta_1, beta_2 = args.betas
+            _, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, (beta_1, -beta_2), criterion)
+            torch.save(EP, path+'/EP_2.pt')
+            _, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, (beta_1, 2*beta_2), criterion)
+            torch.save(EP, path+'/EP_3.pt')
+            _, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, (beta_1, -2*beta_2), criterion)
+            torch.save(EP, path+'/EP_4.pt')
 
 
 elif args.todo=='evaluate':
