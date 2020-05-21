@@ -51,6 +51,7 @@ parser.add_argument('--seed',type = int, default = None, metavar = 's', help='ra
 parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='device')
 parser.add_argument('--local', default = False, action = 'store_true', help='locally connected architectures (default: False)')
 parser.add_argument('--thirdphase', default = False, action = 'store_true', help='add third phase for higher order evaluation of the gradient (default: False)')
+parser.add_argument('--fivephase', default = False, action = 'store_true', help='perform 5 phases for higher order evaluation of the gradient (default: False)')
 parser.add_argument('--softmax', default = False, action = 'store_true', help='softmax loss with parameters (default: False)')
 parser.add_argument('--same-update', default = False, action = 'store_true', help='same update is applied for VFCNN back and forward')
 
@@ -244,7 +245,7 @@ if args.todo=='train':
 
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, alg=args.alg, 
                  random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, 
-                 thirdphase=args.thirdphase, scheduler=scheduler)
+                 thirdphase=args.thirdphase, scheduler=scheduler, fivephase=args.fivephase)
 
 
 elif args.todo=='gducheck':

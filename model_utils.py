@@ -580,7 +580,7 @@ class P_CNN(torch.nn.Module):
             
         return neurons
 
-    def compute_syn_grads(self, x, y, neurons_1, neurons_2, betas, criterion, check_thm=False):
+    def compute_syn_grads(self, x, y, neurons_1, neurons_2, betas, criterion, neurons_4=None, neurons_5=None, check_thm=False):
         
         beta_1, beta_2 = betas
         
@@ -594,9 +594,17 @@ class P_CNN(torch.nn.Module):
         phi_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
         phi_2 = phi_2.mean()
         
-        delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
-        delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
- 
+        if neurons_4 is None:  #not five phase
+            delta_phi = (phi_2 - phi_1)/(beta_1 - beta_2)        
+            delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1) ----> dL/dp  by the theorem
+        else:
+            phi_3 = self.Phi(x, y, neurons_4, 2*beta_1, criterion)
+            phi_3 = phi_3.mean()
+            phi_4 = self.Phi(x, y, neurons_5, 2*beta_2, criterion)
+            phi_4 = phi_4.mean()
+            
+            delta_phi = (-phi_4 + 8*phi_2 - 8*phi_1 + phi_3)/(6*(beta_1 - beta_2))
+            delta_phi.backward()
            
    
  
@@ -1012,7 +1020,7 @@ def RMSE(BPTT, EP):
 
         
 def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, alg='EP', 
-          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, scheduler=None):
+          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, scheduler=None, fivephase=False):
     
     mbs = train_loader.batch_size
     start = time.time()
@@ -1086,6 +1094,17 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     neurons = model(x, y, neurons, T2, beta = - beta_2, criterion=criterion)
                     neurons_3 = copy(neurons)
                     model.compute_syn_grads(x, y, neurons_2, neurons_3, (beta_2, - beta_2), criterion)
+                elif fivephase:
+                    neurons = copy(neurons_1)
+                    neurons = model(x, y, neurons, T2, beta = - beta_2, criterion=criterion)
+                    neurons_3 = copy(neurons)
+                    neurons = copy(neurons_1)
+                    neurons = model(x, y, neurons, T2, beta = 2*beta_2, criterion=criterion)
+                    neurons_4 = copy(neurons)
+                    neurons = copy(neurons_1)
+                    neurons = model(x, y, neurons, T2, beta = -2*beta_2, criterion=criterion)
+                    neurons_5 = copy(neurons)
+                    model.compute_syn_grads(x, y, neurons_2, neurons_3, (beta_2,-beta_2), criterion, neurons_4=neurons_4, neurons_5=neurons_5)
                 else:
                     model.compute_syn_grads(x, y, neurons_1, neurons_2, betas, criterion)
 

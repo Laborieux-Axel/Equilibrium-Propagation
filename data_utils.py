@@ -131,6 +131,7 @@ def createHyperparametersFile(path, args, model, command_line):
         "- betas: {}".format(args.betas) + "\n", 
         "- random beta_2 sign: {}".format(args.random_sign) + "\n", 
         "- thirdphase: {}".format(args.thirdphase) + "\n", 
+        "- fivephase: {}".format(args.fivephase) + "\n", 
         "- softmax: {}".format(args.softmax) + "\n", 
         "- same update VFCNN: {}".format(args.same_update) + "\n", 
         "- epochs: {}".format(args.epochs) + "\n", 
