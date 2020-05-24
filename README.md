@@ -13,11 +13,11 @@ conda install -c pytorch pytorch
 conda install -c pytorch torchvision
 conda install -c conda-forge matplotlib
 ```
-## Obtaining the results
+## Training
 
-### Symmetric connections
+### Training a CNN on CIFAR-10 with symmetric connections
 
-For the results on the MSE Loss function (relevant arguments `--loss 'mse'`):
++ For the results on the MSE Loss function (relevant arguments `--loss 'mse'`):
 ```
 # EP with one-sided gradient estimate
 python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'EP' --betas 0.0 0.5 --loss 'mse' --save --device 0 
@@ -38,7 +38,7 @@ python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 
 python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'BPTT' --loss 'mse' --save --device 0 
 ```
 
-For the results using the Cross Entropy Loss function (relevant arguments `--loss 'cel' --softmax`):
++ For the training using the Cross Entropy Loss function (relevant arguments `--loss 'cel' --softmax`):
 
 ```
 # EP with symmetric gradient estimate
@@ -50,7 +50,7 @@ python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 
 python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 25 --mbs 128 --alg 'BPTT' --loss 'cel' --softmax --save --device 0 
 ```
 
-For the same results with dropout run :
++ For the Crossentropy Loss training using dropout run :
 
 ```
 # EP with symmetric gradient estimate and dropout
@@ -64,7 +64,7 @@ python main_dropout.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 
 ```
 
 
-### Asymmetric connections
+### Training a CNN on CIFAR-10 with asymmetric connections
 
 EP with different updates between forward and backward weights:
 
