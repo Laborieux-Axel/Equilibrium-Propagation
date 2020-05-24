@@ -1,11 +1,11 @@
-# Equilibrium Propagation (EP)  
+# Scaling Equilibrium Propagation to Deep ConvNets  
 
-This repository contains the code producing the results of results of the paper "Scaling Equilibrium Propagation to Deep ConvNets".  
+This repository contains the code producing the results of the paper "Scaling Equilibrium Propagation to Deep ConvNets".  
 See the bottom of the page for a summary of all the arguments in the command lines.
 
 ## Setting up the environment
 
-Run the following command lines to se the environment using conda:
+Run the following command lines to set the environment using conda:
 ```
 conda create --name EP python=3.6
 conda activate EP
