@@ -9,9 +9,8 @@ Run the following command lines to set the environment using conda:
 ```
 conda create --name EP python=3.6
 conda activate EP
-conda install -c pytorch pytorch
-conda install -c pytorch torchvision
 conda install -c conda-forge matplotlib
+conda install pytorch torchvision -c pytorch
 ```
 ## Training
 
