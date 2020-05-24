@@ -1,7 +1,7 @@
 # Scaling Equilibrium Propagation to Deep ConvNets  
 
 This repository contains the code producing the results of the paper "Scaling Equilibrium Propagation to Deep ConvNets".  
-See the bottom of the page for a summary of all the arguments in the command lines.
+This implementation of EP makes extensive use of PyTorch automatic differentiation capability. We recommand the reader to look first at the class MLP of model_utils.py to understand how this implementation works, the convolutional architecture has the same structure but is naturally wordier. The dynamics of neurons as well as the EP update rule is obtained by automatic differentiation of the primitive function Phi.
 
 ## Setting up the environment
 
@@ -93,6 +93,11 @@ To evaluate a model, simply change the flag `--todo` to  `--todo 'evaluate'` and
 
 EP updates approximates ground truth gradients computed by BPTT. To check if the theorem is satisfied set the `--todo` flag to `--todo 'gducheck`. With the flag `--save` enabled, plots comparing EP and BPTT updates for each layers will be created in the results folder.
 
+
+## More command lines
+
+More command line are available at in the check folder of this repository, including training MLP on MNIST.
+See the bottom of the page for a summary of all the arguments in the command lines.
 
 ## Summary table of the command lines arguments  
 
