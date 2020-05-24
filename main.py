@@ -270,6 +270,15 @@ elif args.todo=='evaluate':
 
     training_acc = evaluate(model, train_loader, args.T1, device)
     training_acc /= len(train_loader.dataset)
-    print('\nTrain accuracy :', training_acc, file=open(path+'/hyperparameters.txt', 'a'))
+    print('\nTrain accuracy :', round(training_acc,2), file=open(path+'/hyperparameters.txt', 'a'))
+    test_acc = evaluate(model, test_loader, args.T1, device)
+    test_acc /= len(test_loader.dataset)
+    print('\nTest accuracy :', round(test_acc, 2), file=open(path+'/hyperparameters.txt', 'a'))
+
+
+
+
+
+
 
 
