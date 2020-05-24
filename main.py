@@ -263,7 +263,9 @@ elif args.todo=='gducheck':
         torch.save(EP, path+'/EP.pt')
         if args.thirdphase:
             torch.save(EP_2, path+'/EP_2.pt')
-        plot_gdu(BPTT, EP, path)
+            plot_gdu(BPTT, EP, path, EP_2=EP_2)
+        else:
+            plot_gdu(BPTT, EP, path)
 
 
 elif args.todo=='evaluate':

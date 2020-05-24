@@ -45,7 +45,7 @@ def plot_gdu(BPTT, EP, path, EP_2=None):
     colors = prop_cycle.by_key()['color']
     for key in EP.keys():
         fig = plt.figure(figsize=(16,9))
-        for idx in range(5):
+        for idx in range(3):
             if len(EP[key].size())==3:
                 i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
                 ep = EP[key][:,i,j].cpu().detach().numpy().flatten()
@@ -56,26 +56,27 @@ def plot_gdu(BPTT, EP, path, EP_2=None):
                 i = np.random.randint(EP[key].size(1))
                 ep = EP[key][:,i].cpu().detach().numpy().flatten()
                 if EP_2 is not None:
-                    ep_2 = EP_2[key][:,i,j].cpu().detach().numpy().flatten()
+                    ep_2 = EP_2[key][:,i].cpu().detach().numpy().flatten()
                 bptt = BPTT[key][:,i].cpu().detach().numpy().flatten()
             elif len(EP[key].size())==5:
                 i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
                 k, l = np.random.randint(EP[key].size(3)), np.random.randint(EP[key].size(4))
                 ep = EP[key][:,i,j,k,l].cpu().detach().numpy().flatten()
                 if EP_2 is not None:
-                    ep_2 = EP_2[key][:,i,j].cpu().detach().numpy().flatten()
+                    ep_2 = EP_2[key][:,i,j,k,l].cpu().detach().numpy().flatten()
                 bptt = BPTT[key][:,i,j,k,l].cpu().detach().numpy().flatten()
             ep, bptt = integrate(ep), integrate(bptt)
-            plt.plot(ep, linestyle=':', color=colors[idx], alpha=0.7)
-            plt.plot(bptt, color=colors[idx], alpha=0.7)
+            plt.plot(ep, linestyle=':', linewidth=2, color=colors[idx], alpha=0.7, label='EP one-sided right')
+            plt.plot(bptt, color=colors[idx], linewidth=2, alpha=0.7, label='BPTT')
             if EP_2 is not None:
                 ep_2 = integrate(ep_2)
-                plt.plot(ep_2, linestyles=':', color=colors[idx], alpha=0.7)
-                plt.plot((ep + ep_2)/2, linestyles='--', color=colors[idx], alpha=0.7)
+                plt.plot(ep_2, linestyle=':', linewidth=2, color=colors[idx], alpha=0.7, label='EP one-sided left')
+                plt.plot((ep + ep_2)/2, linestyle='--', linewidth=2, color=colors[idx], alpha=0.7, label='EP symmetric')
             plt.title(key.replace('.',' '))
         plt.grid()
+        plt.legend()
         plt.xlabel('time step t')
-        plt.ylable('gradient estimate')
+        plt.ylabel('gradient estimate')
         fig.savefig(path+'/'+key.replace('.','_')+'.png', dpi=300)
         plt.close()
 
