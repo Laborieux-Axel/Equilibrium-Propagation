@@ -1,53 +1,75 @@
-# Equilibrium Propagation (EP)  
+# Scaling Equilibrium Propagation to Deep ConvNets  
 
-Reproducing some results of this __[paper](https://arxiv.org/pdf/1905.13633.pdf)__ and scaling to CIFAR10.  
+This repository contains the code producing the results of the paper "Scaling Equilibrium Propagation to Deep ConvNets".  
 See the bottom of the page for a summary of all the arguments in the command lines.
 
-## Examples of command lines  
-### Multi Layer Perceptron on MNIST  
+## Setting up the environment
 
-Checking gradient descent updates (GDU) property by setting `--todo 'gducheck'`:  
+Run the following command lines to set the environment using conda:
 ```
-python main.py --model 'MLP' --task 'MNIST' --archi 784 512 10 --act 'tanh' --todo 'gducheck' --betas 0.0 0.01 --T1 30 --T2 10 --mbs 50 --device 0  
+conda create --name EP python=3.6
+conda activate EP
+conda install -c pytorch pytorch
+conda install -c pytorch torchvision
+conda install -c conda-forge matplotlib
 ```
+## Obtaining the results
 
-Training by setting `--todo 'train'`:  
+### Symmetric connections
+
+For the results on the MSE Loss function (relevant arguments `--loss 'mse'`):
 ```
-python main.py --model 'MLP' --task 'MNIST' --archi 784 512 10 --lrs 0.08 0.04 --epochs 3 --act 'mysig' --todo 'train' --betas 0.0 0.1 --T1 30 --T2 10 --mbs 50 --device 0  
-```
-Note that during training, the GDU theorem quantifying the similarity between BPTT and EP updates can be checked and printed in the console by setting `--check-thm`.  
-
-### Convolutional Neural Network on MNIST or CIFAR10    
-
-The training can be done with **Equilibrium Propagation**  by setting `--alg 'EP'` and three different loss functions:
-
-+ Mean Square Error by setting `--loss 'mse'`:
-
-```
-python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 --kernels 3 3 3 --pools 'mmm' --strides 1 1 1 --fc 10 --optim 'adam' --lrs 5e-5 5e-5 1e-5 7e-6 --epochs 400 --act 'hard_sigmoid' --todo 'train' --betas 0.0 0.5 --T1 250 --T2 30 --mbs 128 --alg 'EP' --random-sign --loss 'mse' --save --device 0
+# EP with one-sided gradient estimate
+python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'EP' --betas 0.0 0.5 --loss 'mse' --save --device 0 
 ```
 
-+ Crossentropy Loss on output neurons by setting `--loss 'cel'`:
-
 ```
-python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 --kernels 3 3 3 --pools 'mmm' --strides 1 1 1 --fc 10 --optim 'adam' --lrs 5e-5 5e-5 1e-5 7e-6 --epochs 400 --act 'hard_sigmoid' --todo 'train' --betas 0.0 0.5 --T1 250 --T2 30 --mbs 128 --alg 'EP' --random-sign --loss 'cel' --save --device 0
-```
-
-+ Crossentropy Loss on FC(penultimate) by setting `--loss 'cel' --softmax`:
-
-```
-python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 --kernels 3 3 3 --pools 'mmm' --strides 1 1 1 --fc 10 --optim 'adam' --lrs 5e-5 5e-5 1e-5 7e-6 --epochs 400 --act 'hard_sigmoid' --todo 'train' --betas 0.0 0.5 --T1 250 --T2 30 --mbs 128 --alg 'EP' --random-sign --loss 'cel' --softmax --save --device 0
+# EP with random sign gradient estimate
+python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'EP' --random-sign --betas 0.0 0.5 --loss 'mse' --save --device 0 
 ```
 
-The flag `--random-sign` provides a random sign for beta in the second phase, it removes a bias in the estimation of the derivative with respect to beta. It can be replaced by the flag `--thirdphase` where the estimation of the derivative of dPhi is done between -beta and +beta. For the CIFAR10 simulation to be stable it is **mandatory** to use either of the flags.
-
-The training can also be done by **Back Propagation Through Time (BPTT)** via `--alg 'BPTT'` and the three same loss functions as above: 
-
 ```
-python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 --kernels 3 3 3 --pools 'mmm' --strides 1 1 1 --fc 10 --optim 'adam' --lrs 5e-5 5e-5 1e-5 7e-6 --epochs 400 --act 'hard_sigmoid' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'BPTT' --loss 'mse' --save --device 0
+# EP with symmetric gradient estimate
+python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'EP' --thirdphase --betas 0.0 0.5 --loss 'mse' --save --device 0 
 ```
 
-For Vector Field models use `--model 'VFMLP'` instead of `--model 'MLP'` and `--model 'VFCNN'` instead of `--model 'CNN'`.
+```
+# BPTT
+python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'BPTT' --loss 'mse' --save --device 0 
+```
+
+For the results using the Cross Entropy Loss function (relevant arguments `--loss 'cel' --softmax`):
+
+```
+# EP with symmetric gradient estimate
+python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 25 --mbs 128 --alg 'EP' --betas 0.0 1.0 --thirdphase --loss 'cel' --softmax --save --device 0 
+```
+
+```
+# BPTT
+python main.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 25 --mbs 128 --alg 'BPTT' --loss 'cel' --softmax --save --device 0 
+```
+
+### Asymmetric connections
+
+EP with different updates between forward and backward weights:
+
+```
+python main.py --model 'VFCNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'EP' --betas 0.0 1.0 --thirdphase --loss 'cel' --softmax --save --device 0
+```
+
+EP with same update between forward and backward weights:
+
+```
+python main.py --model 'VFCNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'EP' --betas 0.0 1.0 --thirdphase --same-update --loss 'cel' --softmax --save --device 0
+```
+
+BPTT
+
+```
+python main.py --model 'VFCNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'BPTT' --loss 'cel' --softmax --save --device 0
+```
+
 
 
 ## Summary table of the command lines arguments  

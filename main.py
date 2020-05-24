@@ -50,7 +50,6 @@ parser.add_argument('--todo', type = str, default = 'train', metavar = 'tr', hel
 parser.add_argument('--load-path', type = str, default = '', metavar = 'l', help='load a model')
 parser.add_argument('--seed',type = int, default = None, metavar = 's', help='random seed')
 parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='device')
-parser.add_argument('--local', default = False, action = 'store_true', help='locally connected architectures (default: False)')
 parser.add_argument('--thirdphase', default = False, action = 'store_true', help='add third phase for higher order evaluation of the gradient (default: False)')
 parser.add_argument('--softmax', default = False, action = 'store_true', help='softmax loss with parameters (default: False)')
 parser.add_argument('--same-update', default = False, action = 'store_true', help='same update is applied for VFCNN back and forward')
@@ -170,7 +169,7 @@ if args.load_path=='':
             channels = [1]+args.channels 
             if args.model=='CNN':
                 model = P_CNN(28, channels, args.kernels, args.strides, args.fc, pools, args.paddings, args.dropouts, 
-                                  activation=activation, local=args.local, softmax=args.softmax)
+                                  activation=activation,  softmax=args.softmax)
             elif args.model=='VFCNN':
                 model = VF_CNN(28, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
                                    activation=activation, softmax=args.softmax, same_update=args.same_update)
@@ -180,7 +179,7 @@ if args.load_path=='':
            channels = [3]+args.channels
            if args.model=='CNN':
                 model = P_CNN(32, channels, args.kernels, args.strides, args.fc, pools, args.paddings, args.dropouts,
-                              activation=activation, local=args.local, softmax=args.softmax)
+                              activation=activation, softmax=args.softmax)
            elif args.model=='VFCNN':
                 model = VF_CNN(32, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
                               activation=activation, softmax = args.softmax, same_update=args.same_update)
