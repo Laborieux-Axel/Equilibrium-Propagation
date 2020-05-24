@@ -16,7 +16,7 @@ conda install pytorch torchvision -c pytorch
 
 When setting the flags `--todo 'train' --save`, a results folder will be created at results/(EP or BPTT)/loss/yyyy-mm-dd/hh-mm-ss with a plot of the train and test accuracy updated at each epoch, and an histogram of neural activations. The best performing model is saved at model.pt and the checkpoint for resuming training at checkpoint.tar. To resume training, simply rerun the same command line with the flag `--load-path 'results/.../hh-mm-ss'` and set the epoch argument to the remaining number of epochs. When the training is over, the final model and checkpoint are saved at final_model.pt and final_checkpoint.tar (they usually differ from the best model).
 
-### Training a CNN on CIFAR-10 with symmetric connections
+### Training a recurrent CNN on CIFAR-10 with symmetric connections
 
 + For the results on the MSE Loss function (relevant arguments `--loss 'mse'`):
 ```
@@ -65,7 +65,7 @@ python main_dropout.py --model 'CNN' --task 'CIFAR10' --data-aug --channels 128 
 ```
 
 
-### Training a CNN on CIFAR-10 with asymmetric connections
+### Training a recurrent CNN on CIFAR-10 with asymmetric connections
 
 EP with different updates between forward and backward weights:
 
@@ -89,10 +89,18 @@ python main.py --model 'VFCNN' --task 'CIFAR10' --data-aug --channels 128 256 51
 
 To evaluate a model, simply change the flag `--todo` to  `--todo 'evaluate'` and specify the path to the folder the same way as for resuming training. Train and Test accuracy will be appended to the hyperparameters.txt file.
 
+```
+python main.py --model 'CNN' --task 'CIFAR10' --data-aug --todo 'evaluate' --T1 250 --mbs 200 --thirdphase --loss 'mse' --save --device 0 --load-path 'results/test'
+```
+
+
 ## Comparing EP and BPTT
 
-EP updates approximates ground truth gradients computed by BPTT. To check if the theorem is satisfied set the `--todo` flag to `--todo 'gducheck`. With the flag `--save` enabled, plots comparing EP and BPTT updates for each layers will be created in the results folder.
+EP updates approximates ground truth gradients computed by BPTT. To check if the theorem is satisfied set the `--todo` flag to `--todo 'gducheck`. With the flag `--save` enabled, plots comparing EP (dashed) and BPTT (solid) updates for each layers will be created in the results folder.
 
+```
+python main.py --model 'CNN' --task 'CIFAR10' --data-aug --todo 'gducheck' --T1 250 --T2 15 --mbs 128 --thirdphase --betas 0.0 0.1 --loss 'mse' --save --device 0 --load-path 'results/test'
+```
 
 ## More command lines
 
