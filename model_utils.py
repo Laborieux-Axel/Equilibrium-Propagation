@@ -892,11 +892,12 @@ class VF_CNN(torch.nn.Module):
             phi_2 = phis_2[idx].mean()
             delta_phi = ((phi_2 - phi_1)/(beta_1 - beta_2))        
             delta_phi.backward() # p.grad = -(d_Phi_2/dp - d_Phi_1/dp)/(beta_2 - beta_1)
-        with torch.no_grad():
-            for idx in range(len(self.B_syn)):
-                common_update = 0.5*(self.B_syn[idx].weight.grad.data + self.synapses[idx+1].weight.grad.data)
-                self.B_syn[idx].weight.grad.data.copy_(common_update)
-                self.synapses[idx+1].weight.grad.data.copy_(common_update)
+        if self.same_update:
+            with torch.no_grad():
+                for idx in range(len(self.B_syn)):
+                    common_update = 0.5*(self.B_syn[idx].weight.grad.data + self.synapses[idx+1].weight.grad.data)
+                    self.B_syn[idx].weight.grad.data.copy_(common_update)
+                    self.synapses[idx+1].weight.grad.data.copy_(common_update)
        
 
          
@@ -1147,6 +1148,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
         save_dic = {'model_state_dict': model.state_dict(), 'opt': optimizer.state_dict(),
                     'train_acc': train_acc, 'test_acc': test_acc, 
                     'best': best, 'epoch': epochs}
+        save_dic['angles'] = angles
         save_dic['scheduler'] = scheduler.state_dict() if scheduler is not None else None
         torch.save(save_dic,  path + '/final_checkpoint.tar')
         torch.save(model, path + '/final_model.pt')
