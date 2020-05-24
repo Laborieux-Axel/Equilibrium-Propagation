@@ -15,6 +15,8 @@ conda install -c conda-forge matplotlib
 ```
 ## Training
 
+When setting the flags `--todo 'train' --save`, a results folder will be created at results/(EP or BPTT)/loss/yyyy-mm-dd/hh-mm-ss with a plot of the train and test accuracy updated at each epoch, and an histogram of neural activations. The best performing model is saved at model.pt and the checkpoint for resuming training at checkpoint.tar. To resume training, simply rerun the same command line with the flag `--load-path 'results/.../hh-mm-ss'` and set the epoch argument to the remaining number of epochs. When the training is over, the final model and checkpoint are saved at final_model.pt and final_checkpoint.tar (they usually differ from the best model).
+
 ### Training a CNN on CIFAR-10 with symmetric connections
 
 + For the results on the MSE Loss function (relevant arguments `--loss 'mse'`):
@@ -84,6 +86,13 @@ BPTT
 python main.py --model 'VFCNN' --task 'CIFAR10' --data-aug --channels 128 256 512 512 --kernels 3 3 3 3 --pools 'mmmm' --strides 1 1 1 1 --paddings 1 1 1 0 --fc 10 --optim 'sgd' --lrs 0.25 0.15 0.1 0.08 0.05 --wds 3e-4 3e-4 3e-4 3e-4 3e-4 --mmt 0.9 --lr-decay --epochs 120 --act 'my_hard_sig' --todo 'train' --T1 250 --T2 30 --mbs 128 --alg 'BPTT' --loss 'cel' --softmax --save --device 0
 ```
 
+## Evaluating
+
+To evaluate a model, simply change the flag `--todo` to  `--todo 'evaluate'` and specify the path to the folder the same way as for resuming training. Train and Test accuracy will be appended to the hyperparameters.txt file.
+
+## Comparing EP and BPTT
+
+EP updates approximates ground truth gradients computed by BPTT. To check if the theorem is satisfied set the `--todo` flag to `--todo 'gducheck`. With the flag `--save` enabled, plots comparing EP and BPTT updates for each layers will be created in the results folder.
 
 
 ## Summary table of the command lines arguments  
