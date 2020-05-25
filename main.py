@@ -7,6 +7,7 @@ import argparse
 import matplotlib
 matplotlib.use('Agg')
 
+import glob
 from PIL import Image
 import os
 from datetime import datetime
@@ -263,8 +264,9 @@ elif args.todo=='gducheck':
         images, labels = images.to(device), labels.to(device)
     else:
         images = []
-        for img_path in ['boat.JPEG','flower.JPEG','beach.JPEG']:
-            image = Image.open('imagenet_samples/'+img_path)
+        all_files = glob.glob('imagenet_samples/*.JPEG')
+        for filename in all_files:
+            image = Image.open(filename)
             image = torchvision.transforms.functional.center_crop(image, 224)
             image = torchvision.transforms.functional.to_tensor(image)
             image.unsqueeze_(0)
