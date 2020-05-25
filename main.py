@@ -7,6 +7,7 @@ import argparse
 import matplotlib
 matplotlib.use('Agg')
 
+from PIL import Image
 import os
 from datetime import datetime
 import time
@@ -248,14 +249,23 @@ if args.todo=='train':
 
 elif args.todo=='gducheck':
 
-    dataiter = iter(train_loader)
-    images, labels = dataiter.next()
-    images, labels = images.to(device), labels.to(device)
+    if args.task != 'imagenet':
+        dataiter = iter(train_loader)
+        images, labels = dataiter.next()
+        images, labels = images[0:10,:], labels[0:10]
+        images, labels = images.to(device), labels.to(device)
+    else:
+        images = Image.open('ILSVRC/Data/CLS-LOC/train/n09332890/n09332890_52074.JPEG')
+        images = torchvision.transforms.functional.to_tensor(images)
+        images.unsqueeze_(0)
+        images = images.add_(-images.mean()).div_(images.std())
+        labels = torch.randint(1000)
+        print(images.shape)
 
-    BPTT, EP = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, betas, criterion)
+    BPTT, EP = check_gdu(model, images, labels, args.T1, args.T2, betas, criterion)
     if args.thirdphase:
         beta_1, beta_2 = args.betas
-        _, EP_2 = check_gdu(model, images[0:10,:], labels[0:10], args.T1, args.T2, (beta_1, -beta_2), criterion)
+        _, EP_2 = check_gdu(model, images, labels, args.T1, args.T2, (beta_1, -beta_2), criterion)
 
     RMSE(BPTT, EP)
     if args.save:
