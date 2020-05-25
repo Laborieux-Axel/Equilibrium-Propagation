@@ -104,6 +104,7 @@ class P_MLP(torch.nn.Module):
         self.activation = activation
         self.archi = archi
         self.softmax = False    #Softmax readout is only defined for CNN and VFCNN       
+        self.nc = self.archi[-1]
 
         # Synapses
         self.synapses = torch.nn.ModuleList()
@@ -125,7 +126,7 @@ class P_MLP(torch.nn.Module):
         
         if beta!=0.0: # Nudging the output layer when beta is non zero 
             if criterion.__class__.__name__.find('MSE')!=-1:
-                y = F.one_hot(y, num_classes=10)
+                y = F.one_hot(y, num_classes=self.nc)
                 L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
             else:
                 L = criterion(layers[-1].float(), y).squeeze()     
@@ -202,6 +203,7 @@ class VF_MLP(torch.nn.Module):
         self.activation = activation
         self.archi = archi
         self.softmax = False        
+        self.nc = self.archi[-1]
 
         # Forward synapses
         self.synapses = torch.nn.ModuleList()
@@ -231,7 +233,7 @@ class VF_MLP(torch.nn.Module):
             phi = torch.sum( self.synapses[-1](layers[-2]) * layers[-1], dim=1).squeeze()
             if beta!=0.0:
                 if criterion.__class__.__name__.find('MSE')!=-1:
-                    y = F.one_hot(y, num_classes=10)
+                    y = F.one_hot(y, num_classes=self.nc)
                     L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
                 else:
                     L = criterion(layers[-1].float(), y).squeeze()     
@@ -249,7 +251,7 @@ class VF_MLP(torch.nn.Module):
             phi = torch.sum( self.synapses[-1](layers[-2]) * layers_2[-1], dim=1).squeeze()
             if beta!=0.0:
                 if criterion.__class__.__name__.find('MSE')!=-1:
-                    y = F.one_hot(y, num_classes=10)
+                    y = F.one_hot(y, num_classes=self.nc)
                     L = 0.5*criterion(layers_2[-1].float(), y.float()).sum(dim=1).squeeze()   
                 else:
                     L = criterion(layers_2[-1].float(), y).squeeze()     
@@ -337,7 +339,8 @@ class P_CNN(torch.nn.Module):
         self.strides = strides
         self.paddings = paddings
         self.fc = fc
-        
+        self.nc = fc[-1]        
+
         self.activation = activation
         self.pools = pools
         
@@ -381,7 +384,7 @@ class P_CNN(torch.nn.Module):
              
             if beta!=0.0:
                 if criterion.__class__.__name__.find('MSE')!=-1:
-                    y = F.one_hot(y, num_classes=10)
+                    y = F.one_hot(y, num_classes=self.nc)
                     L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
                 else:
                     L = criterion(layers[-1].float(), y).squeeze()             
@@ -500,7 +503,8 @@ class VF_CNN(torch.nn.Module):
         self.strides = strides
         self.paddings = paddings
         self.fc = fc
-        
+        self.nc = fc[-1]        
+
         self.activation = activation
         self.pools = pools
         
@@ -578,7 +582,7 @@ class VF_CNN(torch.nn.Module):
                 phi = torch.sum( self.synapses[-1](layers[-2].view(mbs,-1)) * layers[-1], dim=1).squeeze()
                 if beta!=0.0:
                     if criterion.__class__.__name__.find('MSE')!=-1:
-                        y = F.one_hot(y, num_classes=10)
+                        y = F.one_hot(y, num_classes=self.nc)
                         L = 0.5*criterion(layers[-1].float(), y.float()).sum(dim=1).squeeze()   
                     else:
                         L = criterion(layers[-1].float(), y).squeeze()             
@@ -638,7 +642,7 @@ class VF_CNN(torch.nn.Module):
                 phi = torch.sum( self.synapses[-1](layers[-2].view(mbs,-1)) * layers_2[-1], dim=1).squeeze()
                 if beta!=0.0:
                     if criterion.__class__.__name__.find('MSE')!=-1:
-                        y = F.one_hot(y, num_classes=10)
+                        y = F.one_hot(y, num_classes=self.nc)
                         L = 0.5*criterion(layers_2[-1].float(), y.float()).sum(dim=1).squeeze()   
                     else:
                         L = criterion(layers_2[-1].float(), y).squeeze()             
@@ -815,7 +819,7 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
         
         # final loss
         if criterion.__class__.__name__.find('MSE')!=-1:
-            loss = (1/(2.0*x.size(0)))*criterion(neurons[-1].float(), F.one_hot(y, num_classes=10).float()).sum(dim=1).squeeze()
+            loss = (1/(2.0*x.size(0)))*criterion(neurons[-1].float(), F.one_hot(y, num_classes=model.nc).float()).sum(dim=1).squeeze()
         else:
             if not model.softmax:
                 loss = (1/(x.size(0)))*criterion(neurons[-1].float(), y).squeeze()
@@ -898,7 +902,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
     start = time.time()
     iter_per_epochs = math.ceil(len(train_loader.dataset)/mbs)
     beta_1, beta_2 = betas
-    
+
     if checkpoint is None:
         train_acc = [10.0]
         test_acc = [10.0]
@@ -975,7 +979,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
          
                 # final loss
                 if criterion.__class__.__name__.find('MSE')!=-1:
-                    loss = 0.5*criterion(neurons[-1].float(), F.one_hot(y, num_classes=10).float()).sum(dim=1).mean().squeeze()
+                    loss = 0.5*criterion(neurons[-1].float(), F.one_hot(y, num_classes=model.nc).float()).sum(dim=1).mean().squeeze()
                 else:
                     if not model.softmax:
                         loss = criterion(neurons[-1].float(), y).mean().squeeze()

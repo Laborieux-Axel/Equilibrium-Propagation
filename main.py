@@ -183,6 +183,13 @@ if args.load_path=='':
            elif args.model=='VFCNN':
                 model = VF_CNN(32, channels, args.kernels, args.strides, args.fc, pools, args.paddings,
                               activation=activation, softmax = args.softmax, same_update=args.same_update)
+        
+        elif args.task=='imagenet':   #only for gducheck
+            pools = make_pools(args.pools)
+            channels = [3]+args.channels 
+            model = P_CNN(224, channels, args.kernels, args.strides, args.fc, pools, args.paddings, 
+                            activation=activation, softmax=args.softmax)
+                       
 
         print('\n')
         print('Poolings =', model.pools)
@@ -255,11 +262,17 @@ elif args.todo=='gducheck':
         images, labels = images[0:10,:], labels[0:10]
         images, labels = images.to(device), labels.to(device)
     else:
-        images = Image.open('ILSVRC/Data/CLS-LOC/train/n09332890/n09332890_52074.JPEG')
-        images = torchvision.transforms.functional.to_tensor(images)
-        images.unsqueeze_(0)
-        images = images.add_(-images.mean()).div_(images.std())
-        labels = torch.randint(1000)
+        images = []
+        for img_path in ['boat.JPEG','flower.JPEG','beach.JPEG']:
+            image = Image.open('imagenet_samples/'+img_path)
+            image = torchvision.transforms.functional.center_crop(image, 224)
+            image = torchvision.transforms.functional.to_tensor(image)
+            image.unsqueeze_(0)
+            image = image.add_(-image.mean()).div_(image.std())
+            images.append(image)
+        labels = torch.randint(1000, (len(images),))
+        images = torch.cat(images, dim=0)
+        images, labels = images.to(device), labels.to(device)
         print(images.shape)
 
     BPTT, EP = check_gdu(model, images, labels, args.T1, args.T2, betas, criterion)
