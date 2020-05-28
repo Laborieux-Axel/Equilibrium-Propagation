@@ -265,7 +265,9 @@ elif args.todo=='gducheck':
     else:
         images = []
         all_files = glob.glob('imagenet_samples/*.JPEG')
-        for filename in all_files:
+        for idx, filename in enumerate(all_files):
+            if idx>2:
+                break
             image = Image.open(filename)
             image = torchvision.transforms.functional.center_crop(image, 224)
             image = torchvision.transforms.functional.to_tensor(image)
@@ -284,10 +286,17 @@ elif args.todo=='gducheck':
 
     RMSE(BPTT, EP)
     if args.save:
-        torch.save(BPTT, path+'/BPTT.pt')
-        torch.save(EP, path+'/EP.pt')
+        bptt_est = get_estimate(BPTT) 
+        ep_est = get_estimate(EP)
+        torch.save(bptt_est, path+'/bptt.tar')
+        torch.save(BPTT, path+'/BPTT.tar')
+        torch.save(ep_est, path+'/ep.tar') 
+        torch.save(EP, path+'/EP.tar') 
         if args.thirdphase:
-            torch.save(EP_2, path+'/EP_2.pt')
+            ep_2_est = get_estimate(EP_2)
+            torch.save(ep_2_est, path+'/ep_2.tar')
+            torch.save(EP_2, path+'/EP_2.tar')
+            compare_estimate(bptt_est, ep_est, ep_2_est, path)
             plot_gdu(BPTT, EP, path, EP_2=EP_2)
         else:
             plot_gdu(BPTT, EP, path)

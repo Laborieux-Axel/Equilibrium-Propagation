@@ -31,10 +31,47 @@ def timeSince(since, percent):
     return 'elapsed time : %s \t (will finish in %s)' % (asMinutes(s), asMinutes(rs))
 
 
+def get_estimate(dic):
+    estimates = {}
+    for key in dic.keys():
+        estimate = integrate(dic[key])
+        estimates[key] = estimate[-1,:]
+    return estimates
+    
+
+def half_sum(dic1, dic2):
+    dic3 = {}
+    for key in dic1.keys():
+        dic3[key] = (dic1[key] + dic2[key])/2
+    return dic3
+
+def compare_estimate(bptt, ep_1, ep_2, path):
+    heights=[]
+    plt.figure(figsize=(16,9))
+    for key in bptt.keys():
+        
+        ep_3 = (ep_1[key]+ep_2[key])/2
+        
+        ep1_bptt = (ep_1[key] - bptt[key]).abs()
+        ep2_bptt = (ep_2[key] - bptt[key]).abs()
+        ep3_bptt = (ep_3 - bptt[key]).abs()
+
+        comp = torch.where( (ep1_bptt + ep2_bptt)==0, torch.ones_like(ep1_bptt), (2*ep3_bptt)/(ep1_bptt + ep2_bptt) )
+        comp = comp.mean().item()
+
+        if key.find('weight')!=-1:
+            heights.append(comp)
+            
+    plt.bar([1,2,3,4,5,6,7], heights)
+    plt.savefig(path+'/bars.png', dpi=300)
+    plt.close()
+
+
+
 def integrate(x):
     for j in reversed(range(x.shape[0])):
         integ=0.0
-        for i in range(j-1):
+        for i in range(j):
             integ += x[i]
         x[j] = integ
     return x
@@ -90,7 +127,6 @@ def plot_neural_activity(neurons, path):
         fig.add_subplot(2, N//2+1, idx+1)
         nrn = neurons[idx].cpu().detach().numpy().flatten()
         plt.hist(nrn, 50)
-        #plt.xlim((-1.1,1.1))
         plt.title('neurons of layer '+str(idx+1))
     fig.savefig(path + '/neural_activity.png')
     plt.close()
