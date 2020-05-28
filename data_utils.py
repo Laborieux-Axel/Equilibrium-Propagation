@@ -34,8 +34,9 @@ def timeSince(since, percent):
 def get_estimate(dic):
     estimates = {}
     for key in dic.keys():
-        estimate = integrate(dic[key])
-        estimates[key] = estimate[-1,:]
+        if key.find('weight')!=-1:
+            estimate = integrate(dic[key])
+            estimates[key] = estimate[-1,:]
     return estimates
     
 
