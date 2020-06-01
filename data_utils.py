@@ -48,6 +48,7 @@ def half_sum(dic1, dic2):
 
 def compare_estimate(bptt, ep_1, ep_2, path):
     heights=[]
+    abscisse=[]
     plt.figure(figsize=(16,9))
     for key in bptt.keys():
         
@@ -62,8 +63,9 @@ def compare_estimate(bptt, ep_1, ep_2, path):
 
         if key.find('weight')!=-1:
             heights.append(comp)
-            
-    plt.bar([1,2,3,4,5,6,7], heights)
+            abscisse.append(int(key[9])+1)
+
+    plt.bar(abscisse, heights)
     plt.savefig(path+'/bars.png', dpi=300)
     plt.close()
 
