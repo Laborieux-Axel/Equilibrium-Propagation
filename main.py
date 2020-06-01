@@ -260,7 +260,7 @@ elif args.todo=='gducheck':
     if args.task != 'imagenet':
         dataiter = iter(train_loader)
         images, labels = dataiter.next()
-        images, labels = images[0:10,:], labels[0:10]
+        images, labels = images[0:20,:], labels[0:20]
         images, labels = images.to(device), labels.to(device)
     else:
         images = []

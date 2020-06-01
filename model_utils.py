@@ -872,8 +872,8 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
         
     # Concatenating with respect to time dimension
     for key in BPTT.keys():
-        BPTT[key] = torch.cat(BPTT[key], dim=0)
-        EP[key] = torch.cat(EP[key], dim=0)
+        BPTT[key] = torch.cat(BPTT[key], dim=0).detach()
+        EP[key] = torch.cat(EP[key], dim=0).detach()
         
     return BPTT, EP
     

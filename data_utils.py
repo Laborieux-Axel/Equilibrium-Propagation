@@ -66,6 +66,10 @@ def compare_estimate(bptt, ep_1, ep_2, path):
             abscisse.append(int(key[9])+1)
 
     plt.bar(abscisse, heights)
+    plt.ylim((0.,1.))
+    plt.title('Euclidian distance between EP symmetric and BPTT, divided by mean distance between EP one-sided and BPTT\n 1.0 means EP symmetric is as close to BPTT as EP one-sided, 0.5 means EP symmetric twice closer to BPTT than EP one-sided')
+    plt.ylabel('Relative distance to BPTT')
+    plt.xlabel('Layer index')
     plt.savefig(path+'/bars.png', dpi=300)
     plt.close()
 
@@ -73,11 +77,12 @@ def compare_estimate(bptt, ep_1, ep_2, path):
 
 def integrate(x):
     y = torch.empty_like(x)
-    for j in reversed(range(x.shape[0])):
-        integ=0.0
-        for i in range(j):
-            integ += x[i]
-        y[j] = integ
+    with torch.no_grad():
+        for j in reversed(range(x.shape[0])):
+            integ=0.0
+            for i in range(j):
+                integ += x[i]
+            y[j] = integ
     return y
 
 
