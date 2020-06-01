@@ -72,12 +72,13 @@ def compare_estimate(bptt, ep_1, ep_2, path):
 
 
 def integrate(x):
+    y = torch.empty_like(x)
     for j in reversed(range(x.shape[0])):
         integ=0.0
         for i in range(j):
             integ += x[i]
-        x[j] = integ
-    return x
+        y[j] = integ
+    return y
 
 
 def plot_gdu(BPTT, EP, path, EP_2=None):
@@ -88,28 +89,30 @@ def plot_gdu(BPTT, EP, path, EP_2=None):
         for idx in range(3):
             if len(EP[key].size())==3:
                 i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
-                ep = EP[key][:,i,j].cpu().detach().numpy().flatten()
+                ep = EP[key][:,i,j].cpu().detach()
                 if EP_2 is not None:
-                    ep_2 = EP_2[key][:,i,j].cpu().detach().numpy().flatten()
-                bptt = BPTT[key][:,i,j].cpu().detach().numpy().flatten()
+                    ep_2 = EP_2[key][:,i,j].cpu().detach()
+                bptt = BPTT[key][:,i,j].cpu().detach()
             elif len(EP[key].size())==2:
                 i = np.random.randint(EP[key].size(1))
-                ep = EP[key][:,i].cpu().detach().numpy().flatten()
+                ep = EP[key][:,i].cpu().detach()
                 if EP_2 is not None:
-                    ep_2 = EP_2[key][:,i].cpu().detach().numpy().flatten()
-                bptt = BPTT[key][:,i].cpu().detach().numpy().flatten()
+                    ep_2 = EP_2[key][:,i].cpu().detach()
+                bptt = BPTT[key][:,i].cpu().detach()
             elif len(EP[key].size())==5:
                 i, j = np.random.randint(EP[key].size(1)), np.random.randint(EP[key].size(2))
                 k, l = np.random.randint(EP[key].size(3)), np.random.randint(EP[key].size(4))
-                ep = EP[key][:,i,j,k,l].cpu().detach().numpy().flatten()
+                ep = EP[key][:,i,j,k,l].cpu().detach()
                 if EP_2 is not None:
-                    ep_2 = EP_2[key][:,i,j,k,l].cpu().detach().numpy().flatten()
-                bptt = BPTT[key][:,i,j,k,l].cpu().detach().numpy().flatten()
+                    ep_2 = EP_2[key][:,i,j,k,l].cpu().detach()
+                bptt = BPTT[key][:,i,j,k,l].cpu().detach()
             ep, bptt = integrate(ep), integrate(bptt)
+            ep, bptt = ep.numpy().flatten(), bptt.numpy().flatten()
             plt.plot(ep, linestyle=':', linewidth=2, color=colors[idx], alpha=0.7, label='EP one-sided right')
             plt.plot(bptt, color=colors[idx], linewidth=2, alpha=0.7, label='BPTT')
             if EP_2 is not None:
                 ep_2 = integrate(ep_2)
+                ep_2 = ep_2.numpy().flatten()
                 plt.plot(ep_2, linestyle=':', linewidth=2, color=colors[idx], alpha=0.7, label='EP one-sided left')
                 plt.plot((ep + ep_2)/2, linestyle='--', linewidth=2, color=colors[idx], alpha=0.7, label='EP symmetric')
             plt.title(key.replace('.',' '))

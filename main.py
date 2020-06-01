@@ -197,7 +197,7 @@ if args.load_path=='':
     if args.scale is not None:
         model.apply(my_init(args.scale))
 else:
-    model = torch.load(args.load_path + '/model.pt')
+    model = torch.load(args.load_path + '/model.pt', map_location=device)
 
 model.to(device)
 print(model)
