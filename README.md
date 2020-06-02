@@ -102,12 +102,6 @@ EP updates approximates ground truth gradients computed by BPTT. To check if the
 python main.py --model 'CNN' --task 'CIFAR10' --data-aug --todo 'gducheck' --T1 250 --T2 15 --mbs 128 --thirdphase --betas 0.0 0.1 --loss 'mse' --save --device 0 --load-path 'results/test'
 ```
 
-For the theorem comparison on ImageNet samples, run :
-
-```
-python main.py --model 'CNN' --task 'imagenet' --act 'my_hard_sig' --kernels 3 3 3 3 3 3 --channels 128 128 256 256 512 512 --pools 'mmmmmm' --strides 1 1 1 1 1 1 --paddings 1 1 1 1 1 0 --fc 1000 --todo 'gducheck' --betas 0.0 0.1 --T1 400 --T2 15 --loss 'mse' --thirdphase --save --device 0
-```
-
 ## More command lines
 
 More command line are available at in the check folder of this repository, including training MLP on MNIST.
