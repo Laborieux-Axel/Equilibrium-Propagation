@@ -751,21 +751,27 @@ class VF_CNN(torch.nn.Module):
             
         return neurons
 
-    def compute_syn_grads(self, x, y, neurons_1, neurons_2, betas, criterion, check_thm=False):
+    def compute_syn_grads(self, x, y, neurons_1, neurons_2, betas, criterion, check_thm=False, neurons_3=None):
         
         beta_1, beta_2 = betas
         
         self.zero_grad()            # p.grad is zero
         if not(check_thm):
-            phis_1 = self.Phi(x, y, neurons_1, beta_1, criterion)
+            if neurons_3 is None: # neurons_3 is not None only when doing thirdphase with old VF (same update False) 
+                phis_1 = self.Phi(x, y, neurons_1, beta_1, criterion)   # phi will habe the form s_* W s_*
+            else:
+                phis_1 = self.Phi(x, y, neurons_1, beta_1, criterion, neurons_2=neurons_2) # phi will have the form s_* W s_beta
         else:
             phis_1 = self.Phi(x, y, neurons_1, beta_2, criterion)
-        
-        if self.same_update:
-            phis_2 = self.Phi(x, y, neurons_2, beta_2, criterion)
-        else:
-            phis_2 = self.Phi(x, y, neurons_1, beta_2, criterion, neurons_2=neurons_2)
 
+        if self.same_update:
+            phis_2 = self.Phi(x, y, neurons_2, beta_2, criterion)  # Phi = s_beta W s_beta
+        else:
+            if neurons_3 is None:
+                phis_2 = self.Phi(x, y, neurons_1, beta_2, criterion, neurons_2=neurons_2) # phi = s_* W s_beta
+            else:
+                phis_2 = self.Phi(x, y, neurons_1, beta_2, criterion, neurons_2=neurons_3) # phi = s_* W s_-beta
+                
         for idx in range(len(neurons_1)):
             phi_1 = phis_1[idx].mean()
             phi_2 = phis_2[idx].mean()
@@ -969,7 +975,13 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     neurons = copy(neurons_1)
                     neurons = model(x, y, neurons, T2, beta = - beta_2, criterion=criterion)
                     neurons_3 = copy(neurons)
-                    model.compute_syn_grads(x, y, neurons_2, neurons_3, (beta_2, - beta_2), criterion)
+                    if not(isinstance(model, VF_CNN)):
+                        model.compute_syn_grads(x, y, neurons_2, neurons_3, (beta_2, - beta_2), criterion)
+                    else:
+                        if model.same_update:
+                            model.compute_syn_grads(x, y, neurons_2, neurons_3, (beta_2, - beta_2), criterion)
+                        else:    
+                            model.compute_syn_grads(x, y, neurons_1, neurons_2, (beta_2, - beta_2), criterion, neurons_3=neurons_3)
                 else:
                     model.compute_syn_grads(x, y, neurons_1, neurons_2, betas, criterion)
 
