@@ -256,7 +256,9 @@ if args.todo=='train':
 
 
 elif args.todo=='gducheck':
-
+    if args.save and args.load_path=='':
+        createHyperparametersFile(path, args, model, command_line)
+ 
     if args.task != 'imagenet':
         dataiter = iter(train_loader)
         images, labels = dataiter.next()

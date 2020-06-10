@@ -203,7 +203,10 @@ def createHyperparametersFile(path, args, model, command_line):
 
     print(command_line, '\n', file=hyperparameters)   
     hyperparameters.writelines(L)
-    print('\nPoolings :', model.pools, '\n', file=hyperparameters)
+    if hasattr(model, 'pools'):
+        print('\nPoolings :', model.pools, '\n', file=hyperparameters)
+    else:
+        print('\n')
     print(model, file=hyperparameters)
 
     hyperparameters.close()
