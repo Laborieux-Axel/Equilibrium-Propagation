@@ -1,0 +1,6 @@
+*.txt
+results/
+__pycache__/
+cifar10_pytorch/
+mnist_pytorch/
+gpu{1..7}.sh
