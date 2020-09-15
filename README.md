@@ -1,6 +1,6 @@
 # Scaling Equilibrium Prop to Deep ConvNets
 
-This repository contains the code producing the results of the paper "Scaling Equilibrium Prop to Deep ConvNets by Drastically Reducing its Gradient Estimator Bias" (https://128.84.21.199/abs/2006.03824).  
+This repository contains the code producing the results of [the paper](https://arxiv.org/abs/2006.03824) "Scaling Equilibrium Prop to Deep ConvNets by Drastically Reducing its Gradient Estimator Bias".  
 This implementation of EP makes extensive use of PyTorch automatic differentiation capability. We recommand the reader to look first at the class MLP of model_utils.py to understand how this implementation works, the convolutional architecture has the same structure but is naturally wordier. The dynamics of neurons as well as the EP update rule is obtained by automatic differentiation of the primitive function Phi.
 
 ## Setting up the environment
