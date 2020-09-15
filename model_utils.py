@@ -931,7 +931,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
             x, y = x.to(device), y.to(device)
             
             neurons = model.init_neurons(x.size(0), device)
-            if alg=='EP':
+            if alg=='EP' or alg=='CEP':
                 # First phase
                 neurons = model(x, y, neurons, T1, beta=beta_1, criterion=criterion)
                 neurons_1 = copy(neurons)
@@ -985,7 +985,31 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 else:
                     model.compute_syn_grads(x, y, neurons_1, neurons_2, betas, criterion)
 
-                optimizer.step()            
+                optimizer.step()      
+
+            elif alg=='CEP':
+                if random_sign and (beta_1==0.0):
+                    rnd_sgn = 2*np.random.randint(2) - 1
+                    betas = beta_1, rnd_sgn*beta_2
+                    beta_1, beta_2 = betas
+
+                # second phase
+                for k in range(T2):
+                    neurons = model(x, y, neurons, 1, beta = beta_2, criterion=criterion)   # one step
+                    neurons_2  = copy(neurons)
+                    model.compute_syn_grads(x, y, neurons_1, neurons_2, betas, criterion)   # compute cep update between 2 consecutive steps 
+                    optimizer.step()                                                        # update weights 
+                    neurons_1 = copy(neurons)  
+                
+                if thirdphase:    
+                    neurons = model(x, y, neurons, T2, beta = 0.0, criterion=criterion)     # come back to s*
+                    neurons_2 = copy(neurons)
+                    for k in range(T2):
+                        neurons = model(x, y, neurons, 1, beta = -beta_2, criterion=criterion)
+                        neurons_3 = copy(neurons)
+                        model.compute_syn_grads(x, y, neurons_2, neurons_3, (beta_2, -beta_2), criterion)
+                        optimizer.step()
+                        neurons_2 = copy(neurons)
 
             elif alg=='BPTT':
          
