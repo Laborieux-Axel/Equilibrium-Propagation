@@ -13,7 +13,6 @@ import os
 from datetime import datetime
 import time
 import math
-from copy import deepcopy
 import sys
 from model_utils import *
 from data_utils import *
@@ -193,14 +192,9 @@ if args.load_path=='':
             model = P_CNN(224, channels, args.kernels, args.strides, args.fc, pools, args.paddings, 
                             activation=activation, softmax=args.softmax)
                        
-    if args.cep_debug:
-        clone_model = deepcopy(model)
-        clone_model.to(device)
-    else:
-        clone_model = None
-
         print('\n')
         print('Poolings =', model.pools)
+
     if args.scale is not None:
         model.apply(my_init(args.scale))
 else:
@@ -259,7 +253,7 @@ if args.todo=='train':
 
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, alg=args.alg, 
                  random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, 
-                 thirdphase=args.thirdphase, scheduler=scheduler, clone_model=clone_model)
+                 thirdphase=args.thirdphase, scheduler=scheduler, cep_debug=args.cep_debug)
 
 
 elif args.todo=='gducheck':

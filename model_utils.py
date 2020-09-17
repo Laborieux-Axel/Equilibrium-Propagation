@@ -899,18 +899,19 @@ def RMSE(BPTT, EP):
     print('\n')
 
 
-def debug(model, clone_model, optimizer):
+def debug(model, prev_p, optimizer):
     optimizer.zero_grad()
-    for p, q in zip(model.parameters(), clone_model.parameters()):
-        p.grad.data.copy_(1e5*(q.data - p.data))
-        p.data.copy_(q.data)
+    for (n, p) in model.named_parameters():
+        idx = int(n[9]) 
+        p.grad.data.copy_((prev_p[n] - p.data)/(optimizer.param_groups[idx]['lr']))
+        p.data.copy_(prev_p[n])
     for i in range(len(model.synapses)):
-        optimizer.param_groups[i]['lr'] *= 1e5
+        optimizer.param_groups[i]['lr'] *= 1e4
     optimizer.step()
 
         
 def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, alg='EP', 
-          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, scheduler=None, clone_model=None):
+          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, scheduler=None, cep_debug=False):
     
     mbs = train_loader.batch_size
     start = time.time()
@@ -1002,10 +1003,12 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     beta_1, beta_2 = betas
 
                 # second phase
-                if clone_model is not None:
-                    clone_model.load_state_dict(model.state_dict())
+                if cep_debug:
+                    prev_p = {}
+                    for (n, p) in model.named_parameters():
+                        prev_p[n] = p.clone().detach()
                     for i in range(len(model.synapses)):
-                        optimizer.param_groups[i]['lr'] *= 1e-5
+                        optimizer.param_groups[i]['lr'] *= 1e-4
                                         
                 for k in range(T2):
                     neurons = model(x, y, neurons, 1, beta = beta_2, criterion=criterion)   # one step
@@ -1014,8 +1017,8 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     optimizer.step()                                                        # update weights 
                     neurons_1 = copy(neurons)  
                
-                if clone_model is not None:
-                    debug(model, clone_model, optimizer)
+                if cep_debug:
+                    debug(model, prev_p, optimizer)
  
                 if thirdphase:    
                     neurons = model(x, y, neurons, T2, beta = 0.0, criterion=criterion)     # come back to s*
