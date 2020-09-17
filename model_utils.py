@@ -898,11 +898,19 @@ def RMSE(BPTT, EP):
         print(key.replace('.','_'), '\t RMSE =', round(comp.mean().item(), 4), '\t SIGN err =', round(sign.mean().item(), 4))
     print('\n')
 
-    
+
+def debug(model, clone_model, optimizer):
+    optimizer.zero_grad()
+    for p, q in zip(model.parameters(), clone_model.parameters()):
+        p.grad.data.copy_(1e5*(q.data - p.data))
+        p.data.copy_(q.data)
+    for i in range(len(model.synapses)):
+        optimizer.param_groups[i]['lr'] *= 1e5
+    optimizer.step()
 
         
 def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, epochs, criterion, alg='EP', 
-          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, scheduler=None):
+          random_sign=False, save=False, check_thm=False, path='', checkpoint=None, thirdphase = False, scheduler=None, clone_model=None):
     
     mbs = train_loader.batch_size
     start = time.time()
@@ -994,13 +1002,21 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     beta_1, beta_2 = betas
 
                 # second phase
+                if clone_model is not None:
+                    clone_model.load_state_dict(model.state_dict())
+                    for i in range(len(model.synapses)):
+                        optimizer.param_groups[i]['lr'] *= 1e-5
+                                        
                 for k in range(T2):
                     neurons = model(x, y, neurons, 1, beta = beta_2, criterion=criterion)   # one step
                     neurons_2  = copy(neurons)
                     model.compute_syn_grads(x, y, neurons_1, neurons_2, betas, criterion)   # compute cep update between 2 consecutive steps 
                     optimizer.step()                                                        # update weights 
                     neurons_1 = copy(neurons)  
-                
+               
+                if clone_model is not None:
+                    debug(model, clone_model, optimizer)
+ 
                 if thirdphase:    
                     neurons = model(x, y, neurons, T2, beta = 0.0, criterion=criterion)     # come back to s*
                     neurons_2 = copy(neurons)

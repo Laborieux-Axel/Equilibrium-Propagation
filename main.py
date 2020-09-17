@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 import time
 import math
+from copy import deepcopy
 import sys
 from model_utils import *
 from data_utils import *
@@ -54,6 +55,7 @@ parser.add_argument('--device',type = int, default = 0, metavar = 'd', help='dev
 parser.add_argument('--thirdphase', default = False, action = 'store_true', help='add third phase for higher order evaluation of the gradient (default: False)')
 parser.add_argument('--softmax', default = False, action = 'store_true', help='softmax loss with parameters (default: False)')
 parser.add_argument('--same-update', default = False, action = 'store_true', help='same update is applied for VFCNN back and forward')
+parser.add_argument('--cep-debug', default = False, action = 'store_true', help='debug cep')
 
 args = parser.parse_args()
 command_line = ' '.join(sys.argv)
@@ -191,6 +193,11 @@ if args.load_path=='':
             model = P_CNN(224, channels, args.kernels, args.strides, args.fc, pools, args.paddings, 
                             activation=activation, softmax=args.softmax)
                        
+    if args.cep_debug:
+        clone_model = deepcopy(model)
+        clone_model.to(device)
+    else:
+        clone_model = None
 
         print('\n')
         print('Poolings =', model.pools)
@@ -252,7 +259,7 @@ if args.todo=='train':
 
     train(model, optimizer, train_loader, test_loader, args.T1, args.T2, betas, device, args.epochs, criterion, alg=args.alg, 
                  random_sign=args.random_sign, check_thm=args.check_thm, save=args.save, path=path, checkpoint=checkpoint, 
-                 thirdphase=args.thirdphase, scheduler=scheduler)
+                 thirdphase=args.thirdphase, scheduler=scheduler, clone_model=clone_model)
 
 
 elif args.todo=='gducheck':
