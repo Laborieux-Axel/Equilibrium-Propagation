@@ -906,7 +906,7 @@ def debug(model, prev_p, optimizer):
         p.grad.data.copy_((prev_p[n] - p.data)/(optimizer.param_groups[idx]['lr']))
         p.data.copy_(prev_p[n])
     for i in range(len(model.synapses)):
-        optimizer.param_groups[i]['lr'] *= 1e4
+        optimizer.param_groups[i]['lr'] *= 1e5
     optimizer.step()
 
         
@@ -1008,7 +1008,7 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     for (n, p) in model.named_parameters():
                         prev_p[n] = p.clone().detach()
                     for i in range(len(model.synapses)):
-                        optimizer.param_groups[i]['lr'] *= 1e-4
+                        optimizer.param_groups[i]['lr'] *= 1e-5
                                         
                 for k in range(T2):
                     neurons = model(x, y, neurons, 1, beta = beta_2, criterion=criterion)   # one step
