@@ -211,6 +211,10 @@ if args.todo=='train':
 
     # Constructing the optimizer
     optim_params = []
+    if (args.alg=='CEP' and args.wds) and not(args.cep_debug):
+        for idx in range(len(model.synapses)):
+            args.wds[idx] = (1 - (1 - args.wds[idx] * args.T2 * args.lrs[idx])**(1/args.T2))/args.lrs[idx]
+
     for idx in range(len(model.synapses)):
         if args.wds is None:
             optim_params.append(  {'params': model.synapses[idx].parameters(), 'lr': args.lrs[idx]}  )

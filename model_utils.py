@@ -907,6 +907,7 @@ def debug(model, prev_p, optimizer):
         p.data.copy_(prev_p[n])
     for i in range(len(model.synapses)):
         optimizer.param_groups[i]['lr'] *= 1e5
+        optimizer.param_groups[i]['weight_decay'] = prev_p['wds'+str(i)]
     optimizer.step()
 
         
@@ -1009,11 +1010,15 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                         prev_p[n] = p.clone().detach()
                     for i in range(len(model.synapses)):
                         optimizer.param_groups[i]['lr'] *= 1e-5
+                        prev_p['wds'+str(i)] = optimizer.param_groups[i]['weight_decay']
+                        optimizer.param_groups[i]['weight_decay'] = 0.0
                                         
                 for k in range(T2):
                     neurons = model(x, y, neurons, 1, beta = beta_2, criterion=criterion)   # one step
                     neurons_2  = copy(neurons)
                     model.compute_syn_grads(x, y, neurons_1, neurons_2, betas, criterion)   # compute cep update between 2 consecutive steps 
+                    for (n, p) in model.named_parameters():
+                        p.grad.data.div_( (1 - optimizer.param_groups[int(n[9])]['lr']*optimizer.param_groups[int(n[9])]['weight_decay'])**(T2-1-k)  ) 
                     optimizer.step()                                                        # update weights 
                     neurons_1 = copy(neurons)  
                
