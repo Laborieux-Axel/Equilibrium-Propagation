@@ -86,7 +86,7 @@ def integrate(x):
     return y
 
 
-def plot_gdu(BPTT, EP, path, EP_2=None):
+def plot_gdu(BPTT, EP, path, EP_2=None, alg='EP'):
     prop_cycle = plt.rcParams['axes.prop_cycle']
     colors = prop_cycle.by_key()['color']
     for key in EP.keys():
@@ -113,13 +113,13 @@ def plot_gdu(BPTT, EP, path, EP_2=None):
                 bptt = BPTT[key][:,i,j,k,l].cpu().detach()
             ep, bptt = integrate(ep), integrate(bptt)
             ep, bptt = ep.numpy().flatten(), bptt.numpy().flatten()
-            plt.plot(ep, linestyle=':', linewidth=2, color=colors[idx], alpha=0.7, label='EP one-sided right')
+            plt.plot(ep, linestyle=':', linewidth=2, color=colors[idx], alpha=0.7, label=alg+' one-sided right')
             plt.plot(bptt, color=colors[idx], linewidth=2, alpha=0.7, label='BPTT')
             if EP_2 is not None:
                 ep_2 = integrate(ep_2)
                 ep_2 = ep_2.numpy().flatten()
-                plt.plot(ep_2, linestyle=':', linewidth=2, color=colors[idx], alpha=0.7, label='EP one-sided left')
-                plt.plot((ep + ep_2)/2, linestyle='--', linewidth=2, color=colors[idx], alpha=0.7, label='EP symmetric')
+                plt.plot(ep_2, linestyle=':', linewidth=2, color=colors[idx], alpha=0.7, label=alg+' one-sided left')
+                plt.plot((ep + ep_2)/2, linestyle='--', linewidth=2, color=colors[idx], alpha=0.7, label=alg+' symmetric')
             plt.title(key.replace('.',' '))
         plt.grid()
         plt.legend()

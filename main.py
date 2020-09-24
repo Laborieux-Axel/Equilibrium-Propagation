@@ -35,7 +35,7 @@ parser.add_argument('--lrs', nargs='+', type = float, default = [], metavar = 'l
 parser.add_argument('--wds', nargs='+', type = float, default = None, metavar = 'l', help='layer weight decays')
 parser.add_argument('--mmt',type = float, default = 0.0, metavar = 'mmt', help='Momentum for sgd')
 parser.add_argument('--loss', type = str, default = 'mse', metavar = 'lss', help='loss for training')
-parser.add_argument('--alg', type = str, default = 'EP', metavar = 'al', help='EP or BPTT')
+parser.add_argument('--alg', type = str, default = 'EP', metavar = 'al', help='EP or BPTT or CEP')
 parser.add_argument('--mbs',type = int, default = 20, metavar = 'M', help='minibatch size')
 parser.add_argument('--T1',type = int, default = 20, metavar = 'T1', help='Time of first phase')
 parser.add_argument('--T2',type = int, default = 4, metavar = 'T2', help='Time of second phase')
@@ -261,6 +261,7 @@ if args.todo=='train':
 
 
 elif args.todo=='gducheck':
+    print('\ntraining algorithm : ',args.alg, '\n')
     if args.save and args.load_path=='':
         createHyperparametersFile(path, args, model, command_line)
  
@@ -286,10 +287,10 @@ elif args.todo=='gducheck':
         images, labels = images.to(device), labels.to(device)
         print(images.shape)
 
-    BPTT, EP = check_gdu(model, images, labels, args.T1, args.T2, betas, criterion)
+    BPTT, EP = check_gdu(model, images, labels, args.T1, args.T2, betas, criterion, alg=args.alg)
     if args.thirdphase:
         beta_1, beta_2 = args.betas
-        _, EP_2 = check_gdu(model, images, labels, args.T1, args.T2, (beta_1, -beta_2), criterion)
+        _, EP_2 = check_gdu(model, images, labels, args.T1, args.T2, (beta_1, -beta_2), criterion, alg = args.alg)
 
     RMSE(BPTT, EP)
     if args.save:
@@ -304,9 +305,9 @@ elif args.todo=='gducheck':
             torch.save(ep_2_est, path+'/ep_2.tar')
             torch.save(EP_2, path+'/EP_2.tar')
             compare_estimate(bptt_est, ep_est, ep_2_est, path)
-            plot_gdu(BPTT, EP, path, EP_2=EP_2)
+            plot_gdu(BPTT, EP, path, EP_2=EP_2, alg=args.alg)
         else:
-            plot_gdu(BPTT, EP, path)
+            plot_gdu(BPTT, EP, path, alg=args.alg)
 
 
 elif args.todo=='evaluate':

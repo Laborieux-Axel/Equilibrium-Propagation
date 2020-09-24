@@ -787,15 +787,20 @@ class VF_CNN(torch.nn.Module):
 
          
 
-def check_gdu(model, x, y, T1, T2, betas, criterion):
+def check_gdu(model, x, y, T1, T2, betas, criterion, alg='EP'):
     # This function returns EP gradients and BPTT gradients for one training iteration
     #  given some labelled data (x, y), time steps for both phases and the loss
     
     # Initialize dictionnaries that will contain BPTT gradients and EP updates
     BPTT, EP = {}, {}
+    if alg=='CEP':
+        prev_p = {}
+
     for name, p in model.named_parameters():
         BPTT[name], EP[name] = [], []
-        
+        if alg=='CEP':
+            prev_p[name] = p
+
     neurons = model.init_neurons(x.size(0), x.device)
     for idx in range(len(neurons)):
         BPTT['neurons_'+str(idx)], EP['neurons_'+str(idx)] = [], []
@@ -867,6 +872,10 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
         neurons = model(x, y, neurons, 1, beta=beta_2, criterion=criterion)  # neurons at time step t+1
         
         model.compute_syn_grads(x, y, neurons_pre, neurons, betas, criterion, check_thm=True)  # compute the EP parameter update
+
+        if alg=='CEP':
+            for p in model.parameters():
+                p.data.add_(-1e-5 * p.grad.data)
         
         # Collect the EP updates forward in time
         for n, p in model.named_parameters():
@@ -880,7 +889,11 @@ def check_gdu(model, x, y, T1, T2, betas, criterion):
     for key in BPTT.keys():
         BPTT[key] = torch.cat(BPTT[key], dim=0).detach()
         EP[key] = torch.cat(EP[key], dim=0).detach()
-        
+    
+    if alg=='CEP':
+        for name, p in model.named_parameters():
+            p.data.copy_(prev_p[name])    
+
     return BPTT, EP
     
 
@@ -1060,8 +1073,8 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                 if isinstance(model, VF_CNN): 
                     angle = model.angle()
                     print('angles ',angle)
-                if check_thm and alg=='EP':
-                    BPTT, EP = check_gdu(model, x[0:5,:], y[0:5], T1, T2, betas, criterion)
+                if check_thm and alg!='BPTT':
+                    BPTT, EP = check_gdu(model, x[0:5,:], y[0:5], T1, T2, betas, criterion, alg=alg)
                     RMSE(BPTT, EP)
     
         if scheduler is not None: # learning rate decay step
