@@ -83,6 +83,11 @@ else:
     path = ''
 
 
+#if args.alg=='CEP' and args.cep_debug:
+#    torch.set_default_dtype(torch.float64)
+
+print('Default dtype :\t', torch.get_default_dtype(), '\n')
+
 
 mbs=args.mbs
 if args.seed is not None:

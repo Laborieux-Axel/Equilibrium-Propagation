@@ -952,7 +952,9 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
 
         for idx, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device)
-            
+            if alg=='CEP' and cep_debug:
+                x = x.double()            
+    
             neurons = model.init_neurons(x.size(0), device)
             if alg=='EP' or alg=='CEP':
                 # First phase
