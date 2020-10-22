@@ -1033,8 +1033,8 @@ def train(model, optimizer, train_loader, test_loader, T1, T2, betas, device, ep
                     neurons = model(x, y, neurons, 1, beta = beta_2, criterion=criterion)   # one step
                     neurons_2  = copy(neurons)
                     model.compute_syn_grads(x, y, neurons_1, neurons_2, betas, criterion)   # compute cep update between 2 consecutive steps 
-                    #for (n, p) in model.named_parameters():
-                    #    p.grad.data.div_( (1 - optimizer.param_groups[int(n[9])]['lr']*optimizer.param_groups[int(n[9])]['weight_decay'])**(T2-1-k)  ) 
+                    for (n, p) in model.named_parameters():
+                        p.grad.data.div_( (1 - optimizer.param_groups[int(n[9])]['lr']*optimizer.param_groups[int(n[9])]['weight_decay'])**(T2-1-k)  ) 
                     optimizer.step()                                                        # update weights 
                     neurons_1 = copy(neurons)  
                
